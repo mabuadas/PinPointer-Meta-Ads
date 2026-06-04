@@ -1,4 +1,4 @@
-# PinPointer Meta Ads Optimizer v3.5.1
+# PinPointer Meta Ads Optimizer v3.6.0
 
 **Unified Dashboard for Meta Ads, Google Ads, and Google Analytics**
 
@@ -13,9 +13,13 @@ A comprehensive advertising optimization platform that brings together Meta Ads,
 ### Meta Ads Dashboard
 - ✅ **90+ Ad Accounts** - Full pagination support for unlimited accounts
 - ✅ **Date Range Selector** - Today, Yesterday, Last 7/30 Days, This/Last Month
+- ✅ **Campaign Search & Filters** - NEW! Search by name + status filters (Active/Paused/Ended/All)
+- ✅ **Objective-Aware Optimization** - Smart alerts based on campaign objective (Awareness, Traffic, Leads, Sales, etc.)
+- ✅ **Country-Sensitive Benchmarks** - 9 MENA markets including Jordan with localized CPM/CPC/CTR targets
 - ✅ **Campaign Insights** - Comprehensive metrics and performance data
 - ✅ **Budget Optimization** - AI-powered suggestions for campaign improvement
 - ✅ **Real-Time Data** - Live metrics updated automatically
+- ✅ **Settings Page** - User-configurable Meta access tokens
 
 ### Google Analytics Dashboard
 - ✅ **OAuth Authentication** - Secure Google account integration
@@ -239,6 +243,28 @@ npx wrangler pages deploy dist --project-name pinpointer-meta-ads
 - Consistent date selectors across all platforms
 - Supports custom ranges from 7 to 90 days
 - Automatic format conversion for each API
+- Date changes now trigger automatic campaign data reload
+
+### Campaign Filtering System (NEW in v3.6.0)
+- **Search Bar**: Real-time search by campaign name (case-insensitive)
+- **Status Filters**: 4 quick filter buttons
+  - 🗂️ All Campaigns (default)
+  - ▶️ Active campaigns only
+  - ⏸️ Paused campaigns only
+  - ⏹️ Ended campaigns (past stop_time)
+- **Campaign Counter**: Live count of filtered results ("X campaigns")
+- **Combined Filtering**: Search + Status filters work together
+- **Performance**: Instant filtering for < 100 campaigns
+
+### Objective-Aware Optimization (NEW in v3.6.0)
+- **6 Objective Families**: Awareness, Traffic, Engagement, Leads, App Promotion, Sales
+- **Smart KPI Selection**: Only relevant metrics checked per objective
+  - Awareness: Impressions, Reach, CPM, CTR (NO conversion checks)
+  - Traffic: Clicks, CPC, CTR (NO conversion checks)
+  - Leads/Sales: Conversions, CPL, Conversion Rate, ROAS
+- **Platform Rules**: Meta learning phase (50 events/week), Google Smart Bidding (50/15 conversions)
+- **Country Benchmarks**: Jordan, UAE, Saudi Arabia, Kuwait, Oman, Bahrain, Qatar, Lebanon, Egypt
+- **Alert Categories**: Platform Rules, Country Benchmarks, Best Practices
 
 ---
 
@@ -256,16 +282,24 @@ npx wrangler pages deploy dist --project-name pinpointer-meta-ads
 
 - ⚡ Edge deployment via Cloudflare Workers
 - ⚡ Global CDN distribution
-- ⚡ Minimal bundle size (~153 KB)
+- ⚡ Minimal bundle size (~199 KB)
 - ⚡ Fast API response times
 - ⚡ Efficient pagination and caching
+- ⚡ Real-time filtering (< 50ms for < 100 campaigns)
 
 ---
 
-## 🐛 Known Issues
+## 🐛 Known Issues & Recent Fixes
 
+### ✅ Fixed in v3.6.0
+1. **JavaScript Error**: "Cannot access 'c' before initialization" in optimization modal - FIXED
+2. **Campaigns Without Data**: Now show user-friendly error messages instead of crashing
+3. **Date Filter Not Working**: Date range changes now trigger automatic data reload
+4. **Awareness Campaigns**: No longer show irrelevant conversion alerts
+
+### Known Issues
 1. **Google Ads Developer Token**: Requires approval from Google (can take several days)
-2. **Meta Token Expiration**: Short-lived tokens expire quickly - use long-lived tokens
+2. **Meta Token Expiration**: Short-lived tokens expire quickly - use long-lived tokens or Settings page
 3. **OAuth Popup Blockers**: Users may need to allow popups for OAuth flows
 
 ---
@@ -299,6 +333,34 @@ For issues or questions, please open an issue on GitHub or contact the author.
 
 ---
 
-**Version**: 3.5.1  
+**Version**: 3.6.0  
 **Last Updated**: June 4, 2026  
 **Status**: ✅ Production Ready
+
+---
+
+## 📋 Recent Updates (v3.6.0)
+
+### New Features
+- ✨ Campaign search bar with real-time filtering
+- ✨ Status filter buttons (All/Active/Paused/Ended)
+- ✨ Campaign counter showing filtered results
+- ✨ Date range now triggers automatic data reload
+- ✨ Settings page for user-configurable tokens
+
+### Bug Fixes
+- 🐛 Fixed JavaScript error "Cannot access 'c' before initialization"
+- 🐛 Fixed campaigns without data showing proper error messages
+- 🐛 Fixed optimization modal crashes
+- 🐛 Fixed date filter not working
+
+### Optimization Improvements
+- 🎯 Objective-aware alerts (no more conversion alerts for awareness campaigns)
+- 🌍 Country-sensitive benchmarks (9 MENA markets including Jordan)
+- 📊 Platform-specific rules (Meta learning phase, Google Smart Bidding)
+
+For detailed documentation see:
+- `DEPLOYMENT_SUMMARY.md` - Quick deployment reference
+- `FILTER_FEATURE_GUIDE.md` - Technical implementation details
+- `TEST_CHECKLIST.md` - Comprehensive testing scenarios
+- `IMPLEMENTATION_SUMMARY.md` - Objective-aware optimization docs
