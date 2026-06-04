@@ -3347,6 +3347,24 @@ app.get('/', (c) => {
             }
         });
         
+        // Helper function to update campaign insights in all arrays
+        function updateCampaignInsights(campaignId, insights) {
+            // Update in campaigns array
+            for (let i = 0; i < campaigns.length; i++) {
+                if (campaigns[i].id === campaignId) {
+                    campaigns[i].insights = insights;
+                    break;
+                }
+            }
+            // Update in allCampaigns array
+            for (let i = 0; i < allCampaigns.length; i++) {
+                if (allCampaigns[i].id === campaignId) {
+                    allCampaigns[i].insights = insights;
+                    break;
+                }
+            }
+        }
+        
         // Get the dynamic "Results" metric based on campaign objective
         function getResultMetricForObjective(objective, insights) {
             const obj = (objective || '').toUpperCase();
@@ -3610,7 +3628,9 @@ app.get('/', (c) => {
                             Unable to load metrics: \${response.data.error}
                         </div>
                     \`;
-                    campaign.insights = null; // Mark as no data
+                    // Mark as no data in all arrays
+                    campaign.insights = null;
+                    updateCampaignInsights(campaign.id, null);
                     return;
                 }
                 
@@ -3623,7 +3643,9 @@ app.get('/', (c) => {
                             No performance data available yet. Campaign may be too new or paused.
                         </div>
                     \`;
-                    campaign.insights = null; // Mark as no data
+                    // Mark as no data in all arrays
+                    campaign.insights = null;
+                    updateCampaignInsights(campaign.id, null);
                     return;
                 }
                 
@@ -3691,21 +3713,30 @@ app.get('/', (c) => {
                             <i class="fas fa-chart-bar mr-2"></i>Key Performance Indicators for \${formatObjective(campaign.objective)}
                         </h4>
                         <div class="grid grid-cols-5 gap-3 text-sm">
-                            \${getObjectiveKPIs(campaign.objective, insights).map(kpi => \`
-                                <div class="bg-white p-3 rounded border">
-                                    <div class="text-gray-500 text-xs mb-1">\${kpi.label}</div>
-                                    <div class="font-bold text-lg \${kpi.good ? 'text-green-600' : 'text-orange-600'}">
-                                        \${kpi.value}
-                                    </div>
-                                    <div class="text-xs text-gray-400">Target: \${kpi.target}</div>
-                                </div>
-                            \`).join('')}
+                            \${(() => {
+                                const kpis = getObjectiveKPIs(campaign.objective, insights);
+                                let kpisHTML = '';
+                                for (let k = 0; k < kpis.length; k++) {
+                                    const kpi = kpis[k];
+                                    kpisHTML += \`
+                                        <div class="bg-white p-3 rounded border">
+                                            <div class="text-gray-500 text-xs mb-1">\${kpi.label}</div>
+                                            <div class="font-bold text-lg \${kpi.good ? 'text-green-600' : 'text-orange-600'}">
+                                                \${kpi.value}
+                                            </div>
+                                            <div class="text-xs text-gray-400">Target: \${kpi.target}</div>
+                                        </div>
+                                    \`;
+                                }
+                                return kpisHTML;
+                            })()}
                         </div>
                     </div>
                 \`;
                 
-                // Store insights for optimization
+                // Store insights for optimization in all arrays
                 campaign.insights = insights;
+                updateCampaignInsights(campaign.id, insights);
             } catch (error) {
                 console.error('Error loading insights:', error);
                 document.getElementById(\`metrics-\${campaign.id}\`).innerHTML = \`
@@ -3756,23 +3787,39 @@ app.get('/', (c) => {
                     return;
                 }
                 
-                content.innerHTML = \`
-                    <div class="mb-6 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
-                        <div class="flex items-start">
-                            <i class="fas fa-lightbulb text-3xl text-yellow-500 mr-4"></i>
-                            <div>
-                                <h4 class="font-bold text-lg text-gray-800 mb-1">AI Analysis Complete</h4>
-                                <p class="text-sm text-gray-600">
-                                    Found <strong>\${suggestions.length}</strong> optimization opportunities for <strong>\${campaign.name}</strong>.
-                                    These recommendations are based on Meta marketing best practices and your campaign data.
+                // Build suggestions HTML without arrow functions
+                let suggestionsHTML = '';
+                for (let i = 0; i < suggestions.length; i++) {
+                    const suggestion = suggestions[i];
+                    
+                    // Build recommendations list if exists
+                    let recommendationsHTML = '';
+                    if (suggestion.recommendations && suggestion.recommendations.length > 0) {
+                        let recItemsHTML = '';
+                        for (let j = 0; j < suggestion.recommendations.length; j++) {
+                            recItemsHTML += \`
+                                <li class="flex items-start text-sm">
+                                    <span class="flex-shrink-0 w-6 h-6 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-xs font-bold mr-3 mt-0.5">
+                                        \${j + 1}
+                                    </span>
+                                    <span class="flex-1 text-gray-700">\${suggestion.recommendations[j]}</span>
+                                </li>
+                            \`;
+                        }
+                        recommendationsHTML = \`
+                            <div class="mt-4 bg-white rounded-lg p-4 border border-gray-200">
+                                <p class="font-bold text-sm mb-3 text-gray-700 flex items-center">
+                                    <i class="fas fa-tasks mr-2 text-purple-600"></i>
+                                    Action Steps to Implement:
                                 </p>
-                                <p class="text-xs text-purple-600 mt-2 font-semibold">
-                                    ⚠️ IMPORTANT: These are suggestions only - please review and implement them manually in your Meta Ads Manager.
-                                </p>
+                                <ul class="space-y-2">
+                                    \${recItemsHTML}
+                                </ul>
                             </div>
-                        </div>
-                    </div>
-                \` + suggestions.map((suggestion, index) => \`
+                        \`;
+                    }
+                    
+                    let suggestionBlock = \`
                     <div class="mb-5 rounded-lg border-l-4 \${getSuggestionStyle(suggestion.type)} p-5 shadow-sm hover:shadow-md transition">
                         <div class="flex items-start">
                             <i class="fas \${getSuggestionIcon(suggestion.type)} text-3xl mr-4 flex-shrink-0 mt-1"></i>
@@ -3828,24 +3875,7 @@ app.get('/', (c) => {
                                     </div>
                                 \` : ''}
                                 
-                                \${suggestion.recommendations ? \`
-                                    <div class="mt-4 bg-white rounded-lg p-4 border border-gray-200">
-                                        <p class="font-bold text-sm mb-3 text-gray-700 flex items-center">
-                                            <i class="fas fa-tasks mr-2 text-purple-600"></i>
-                                            Action Steps to Implement:
-                                        </p>
-                                        <ul class="space-y-2">
-                                            \${suggestion.recommendations.map((rec, idx) => \`
-                                                <li class="flex items-start text-sm">
-                                                    <span class="flex-shrink-0 w-6 h-6 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-xs font-bold mr-3 mt-0.5">
-                                                        \${idx + 1}
-                                                    </span>
-                                                    <span class="flex-1 text-gray-700">\${rec}</span>
-                                                </li>
-                                            \`).join('')}
-                                        </ul>
-                                    </div>
-                                \` : ''}
+                                \${recommendationsHTML}
                                 
                                 \${suggestion.impact ? \`
                                     <div class="mt-3 flex items-center text-sm">
@@ -3857,7 +3887,30 @@ app.get('/', (c) => {
                             </div>
                         </div>
                     </div>
-                \`).join('');
+                    \`;
+                    
+                    suggestionsHTML += suggestionBlock;
+                }
+                
+                // Set the final HTML with header and suggestions
+                content.innerHTML = \`
+                    <div class="mb-6 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-lightbulb text-3xl text-yellow-500 mr-4"></i>
+                            <div>
+                                <h4 class="font-bold text-lg text-gray-800 mb-1">AI Analysis Complete</h4>
+                                <p class="text-sm text-gray-600">
+                                    Found <strong>\${suggestions.length}</strong> optimization opportunities for <strong>\${campaign.name}</strong>.
+                                    These recommendations are based on Meta marketing best practices and your campaign data.
+                                </p>
+                                <p class="text-xs text-purple-600 mt-2 font-semibold">
+                                    ⚠️ IMPORTANT: These are suggestions only - please review and implement them manually in your Meta Ads Manager.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    \${suggestionsHTML}
+                \`;
                 
             } catch (error) {
                 console.error('Error getting suggestions:', error);
