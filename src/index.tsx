@@ -4011,7 +4011,15 @@ app.get('/', (c) => {
         }
         
         function formatObjective(objective) {
-            return objective.replace(/_/g, ' ').toLowerCase().replace(/\\b\\w/g, l => l.toUpperCase());
+            const withSpaces = objective.replace(/_/g, ' ').toLowerCase();
+            // Capitalize first letter of each word without arrow function
+            const words = withSpaces.split(' ');
+            let result = '';
+            for (let i = 0; i < words.length; i++) {
+                if (i > 0) result += ' ';
+                result += words[i].charAt(0).toUpperCase() + words[i].slice(1);
+            }
+            return result;
         }
         
         function getStatusBadge(status) {
