@@ -345,7 +345,350 @@ app.post('/api/optimize/suggestions', async (c) => {
   }
 })
 
-// COMPREHENSIVE OPTIMIZATION ENGINE with Meta Marketing Expertise
+// ============================================
+// OBJECTIVE & COUNTRY INTELLIGENCE SYSTEM
+// ============================================
+
+// Objective Family Mapper - Normalizes Meta/Google objectives into 6 families
+function mapObjectiveToFamily(objective: string, platform: string = 'meta'): string {
+  const objectiveLower = (objective || '').toLowerCase()
+  
+  // Meta Objectives Mapping
+  if (platform === 'meta') {
+    if (objectiveLower.includes('awareness') || objectiveLower.includes('reach') || 
+        objectiveLower.includes('brand')) {
+      return 'awareness'
+    }
+    if (objectiveLower.includes('traffic') || objectiveLower.includes('link_clicks')) {
+      return 'traffic'
+    }
+    if (objectiveLower.includes('engagement') || objectiveLower.includes('post_engagement') ||
+        objectiveLower.includes('video_views')) {
+      return 'engagement'
+    }
+    if (objectiveLower.includes('lead') || objectiveLower.includes('messages')) {
+      return 'leads'
+    }
+    if (objectiveLower.includes('app') || objectiveLower.includes('mobile')) {
+      return 'app_promotion'
+    }
+    if (objectiveLower.includes('sales') || objectiveLower.includes('conversions') || 
+        objectiveLower.includes('outcome_sales') || objectiveLower.includes('purchase')) {
+      return 'sales'
+    }
+  }
+  
+  // Google Ads Objectives Mapping
+  if (platform === 'google') {
+    if (objectiveLower.includes('awareness') || objectiveLower.includes('reach') ||
+        objectiveLower.includes('brand')) {
+      return 'awareness'
+    }
+    if (objectiveLower.includes('traffic') || objectiveLower.includes('clicks')) {
+      return 'traffic'
+    }
+    if (objectiveLower.includes('engagement') || objectiveLower.includes('video')) {
+      return 'engagement'
+    }
+    if (objectiveLower.includes('lead') || objectiveLower.includes('form')) {
+      return 'leads'
+    }
+    if (objectiveLower.includes('app')) {
+      return 'app_promotion'
+    }
+    if (objectiveLower.includes('sales') || objectiveLower.includes('conversion') ||
+        objectiveLower.includes('purchase') || objectiveLower.includes('roas')) {
+      return 'sales'
+    }
+  }
+  
+  // Default fallback
+  return 'sales' // Most conservative assumption
+}
+
+// Objective-Specific KPI Configuration
+interface ObjectiveKPIs {
+  primary: string[]
+  secondary: string[]
+  diagnostic: string[]
+  skipMetrics: string[]
+  skipAlerts: string[]
+}
+
+const OBJECTIVE_KPI_MAP: Record<string, ObjectiveKPIs> = {
+  awareness: {
+    primary: ['reach', 'impressions', 'cpm', 'frequency'],
+    secondary: ['video_views', 'thruplay_rate', 'hook_rate', 'video_watch_time'],
+    diagnostic: ['ctr', 'engagement_rate'],
+    skipMetrics: ['conversions', 'cost_per_conversion', 'conversion_rate', 'roas', 'purchases'],
+    skipAlerts: ['zero_conversions', 'low_conversion_rate', 'high_cost_per_conversion']
+  },
+  traffic: {
+    primary: ['clicks', 'cpc', 'ctr', 'link_clicks'],
+    secondary: ['landing_page_views', 'bounce_rate', 'time_on_site'],
+    diagnostic: ['impressions', 'cpm'],
+    skipMetrics: ['conversions', 'roas'],
+    skipAlerts: ['zero_conversions', 'low_roas']
+  },
+  engagement: {
+    primary: ['likes', 'comments', 'shares', 'engagement_rate', 'video_views'],
+    secondary: ['reactions', 'saves', 'cpe'],
+    diagnostic: ['reach', 'impressions', 'frequency'],
+    skipMetrics: ['conversions', 'roas', 'purchases'],
+    skipAlerts: ['zero_conversions', 'low_conversion_rate']
+  },
+  leads: {
+    primary: ['leads', 'cost_per_lead', 'lead_rate'],
+    secondary: ['form_submissions', 'form_opens', 'ctr'],
+    diagnostic: ['clicks', 'impressions', 'cpm'],
+    skipMetrics: ['roas', 'purchases'],
+    skipAlerts: ['low_roas']
+  },
+  app_promotion: {
+    primary: ['app_installs', 'cost_per_install', 'app_events'],
+    secondary: ['app_engagement', 'retention_rate'],
+    diagnostic: ['clicks', 'impressions'],
+    skipMetrics: ['roas'],
+    skipAlerts: ['low_roas']
+  },
+  sales: {
+    primary: ['conversions', 'roas', 'cost_per_conversion', 'purchase_value'],
+    secondary: ['cart_adds', 'checkout_initiations', 'conversion_rate'],
+    diagnostic: ['clicks', 'ctr', 'cpc'],
+    skipMetrics: [],
+    skipAlerts: []
+  }
+}
+
+// Country Benchmark Database (GCC + Levant Markets)
+interface CountryBenchmark {
+  country: string
+  cpm: { min: number; max: number; optimal: number }
+  cpc: { min: number; max: number; optimal: number }
+  ctr: { min: number; max: number; optimal: number }
+  costPerConversion: { min: number; max: number; optimal: number }
+  marketContext: string
+  competitionLevel: 'low' | 'medium' | 'high' | 'very_high'
+}
+
+const COUNTRY_BENCHMARKS: Record<string, CountryBenchmark> = {
+  'AE': { // UAE
+    country: 'United Arab Emirates',
+    cpm: { min: 8, max: 15, optimal: 10 },
+    cpc: { min: 0.80, max: 2.00, optimal: 1.20 },
+    ctr: { min: 1.2, max: 2.5, optimal: 1.8 },
+    costPerConversion: { min: 25, max: 80, optimal: 45 },
+    marketContext: 'Premium market with highest costs in region. High purchasing power, competitive landscape.',
+    competitionLevel: 'very_high'
+  },
+  'SA': { // Saudi Arabia
+    country: 'Saudi Arabia',
+    cpm: { min: 5, max: 10, optimal: 7 },
+    cpc: { min: 0.50, max: 1.50, optimal: 0.90 },
+    ctr: { min: 1.0, max: 2.0, optimal: 1.5 },
+    costPerConversion: { min: 20, max: 60, optimal: 35 },
+    marketContext: 'Largest market by scale. Strong competition, high digital adoption.',
+    competitionLevel: 'high'
+  },
+  'EG': { // Egypt
+    country: 'Egypt',
+    cpm: { min: 2, max: 5, optimal: 3 },
+    cpc: { min: 0.20, max: 0.60, optimal: 0.35 },
+    ctr: { min: 0.8, max: 1.8, optimal: 1.2 },
+    costPerConversion: { min: 8, max: 25, optimal: 15 },
+    marketContext: 'High volume, budget-friendly. Large population, lower purchasing power.',
+    competitionLevel: 'medium'
+  },
+  'JO': { // Jordan - KEY MARKET
+    country: 'Jordan',
+    cpm: { min: 3, max: 7, optimal: 4.5 },
+    cpc: { min: 0.30, max: 0.90, optimal: 0.55 },
+    ctr: { min: 1.0, max: 2.2, optimal: 1.5 },
+    costPerConversion: { min: 12, max: 40, optimal: 22 },
+    marketContext: 'Mature digital market. Well-educated audience, moderate competition.',
+    competitionLevel: 'medium'
+  },
+  'LB': { // Lebanon
+    country: 'Lebanon',
+    cpm: { min: 3, max: 7, optimal: 4.5 },
+    cpc: { min: 0.30, max: 0.90, optimal: 0.55 },
+    ctr: { min: 0.9, max: 2.0, optimal: 1.4 },
+    costPerConversion: { min: 10, max: 35, optimal: 20 },
+    marketContext: 'Economic challenges but digitally savvy. Cost-sensitive market.',
+    competitionLevel: 'medium'
+  },
+  'KW': { // Kuwait
+    country: 'Kuwait',
+    cpm: { min: 6, max: 12, optimal: 8 },
+    cpc: { min: 0.60, max: 1.80, optimal: 1.10 },
+    ctr: { min: 1.1, max: 2.3, optimal: 1.6 },
+    costPerConversion: { min: 22, max: 70, optimal: 40 },
+    marketContext: 'High purchasing power, smaller population. Premium market.',
+    competitionLevel: 'high'
+  },
+  'QA': { // Qatar
+    country: 'Qatar',
+    cpm: { min: 7, max: 13, optimal: 9 },
+    cpc: { min: 0.70, max: 1.90, optimal: 1.15 },
+    ctr: { min: 1.1, max: 2.4, optimal: 1.7 },
+    costPerConversion: { min: 24, max: 75, optimal: 42 },
+    marketContext: 'Wealthy market, highly competitive. Premium positioning required.',
+    competitionLevel: 'very_high'
+  },
+  'BH': { // Bahrain
+    country: 'Bahrain',
+    cpm: { min: 5, max: 10, optimal: 7 },
+    cpc: { min: 0.50, max: 1.50, optimal: 0.90 },
+    ctr: { min: 1.0, max: 2.2, optimal: 1.5 },
+    costPerConversion: { min: 18, max: 55, optimal: 32 },
+    marketContext: 'Small but affluent market. Moderate competition.',
+    competitionLevel: 'medium'
+  },
+  'OM': { // Oman
+    country: 'Oman',
+    cpm: { min: 4, max: 9, optimal: 6 },
+    cpc: { min: 0.40, max: 1.30, optimal: 0.75 },
+    ctr: { min: 0.9, max: 2.0, optimal: 1.4 },
+    costPerConversion: { min: 15, max: 50, optimal: 28 },
+    marketContext: 'Growing digital adoption. Moderate costs and competition.',
+    competitionLevel: 'medium'
+  }
+}
+
+// Get country benchmark with fallback to historical data
+function getCountryBenchmark(countryCode: string, historicalData?: any): CountryBenchmark | null {
+  // Try exact match first
+  if (COUNTRY_BENCHMARKS[countryCode]) {
+    return COUNTRY_BENCHMARKS[countryCode]
+  }
+  
+  // If no benchmark exists, return null to trigger historical fallback
+  return null
+}
+
+// Platform-Specific Rule Checker
+interface PlatformRule {
+  ruleName: string
+  status: 'pass' | 'warning' | 'fail'
+  message: string
+  recommendation: string
+  source: 'meta_official' | 'google_official'
+}
+
+function checkMetaLearningPhase(conversions: number, weeklyEvents: number, objective: string): PlatformRule {
+  const objectiveFamily = mapObjectiveToFamily(objective, 'meta')
+  
+  // Meta requires 50 optimization events per week
+  const requiredEvents = 50
+  
+  if (objectiveFamily === 'awareness') {
+    // For awareness, check impressions instead
+    if (weeklyEvents >= 50000) {
+      return {
+        ruleName: 'Meta Learning Phase',
+        status: 'pass',
+        message: `✅ Sufficient impression volume (${weeklyEvents.toLocaleString()}) for optimization`,
+        recommendation: 'Campaign is out of learning phase. Continue monitoring.',
+        source: 'meta_official'
+      }
+    } else {
+      return {
+        ruleName: 'Meta Learning Phase',
+        status: 'warning',
+        message: `⚠️ Low impression volume: ${weeklyEvents.toLocaleString()}/50,000 per week`,
+        recommendation: 'Increase budget or broaden audience to reach 50K+ impressions weekly.',
+        source: 'meta_official'
+      }
+    }
+  }
+  
+  // For conversion objectives (sales, leads)
+  if (['sales', 'leads'].includes(objectiveFamily)) {
+    if (conversions >= requiredEvents) {
+      return {
+        ruleName: 'Meta Learning Phase',
+        status: 'pass',
+        message: `✅ Learning phase complete: ${conversions}/${requiredEvents} optimization events`,
+        recommendation: 'Campaign is optimized. Scale gradually while monitoring performance.',
+        source: 'meta_official'
+      }
+    } else {
+      return {
+        ruleName: 'Meta Learning Phase',
+        status: 'warning',
+        message: `⚠️ Still in learning: ${conversions}/${requiredEvents} optimization events per week`,
+        recommendation: 'Need ' + (requiredEvents - conversions) + ' more events. Increase budget or broaden targeting.',
+        source: 'meta_official'
+      }
+    }
+  }
+  
+  // For other objectives, check general engagement
+  return {
+    ruleName: 'Meta Learning Phase',
+    status: 'pass',
+    message: '✅ Campaign collecting data normally',
+    recommendation: 'Continue monitoring performance.',
+    source: 'meta_official'
+  }
+}
+
+function checkGoogleSmartBidding(conversions: number, biddingStrategy: string): PlatformRule {
+  const smartBiddingStrategies = ['target_cpa', 'target_roas', 'maximize_conversions', 'maximize_conversion_value']
+  const isSmartBidding = smartBiddingStrategies.some(s => biddingStrategy.toLowerCase().includes(s))
+  
+  if (!isSmartBidding) {
+    return {
+      ruleName: 'Google Smart Bidding',
+      status: 'pass',
+      message: '✅ Manual bidding - no minimum conversion requirement',
+      recommendation: 'Consider switching to Smart Bidding after 50+ conversions.',
+      source: 'google_official'
+    }
+  }
+  
+  // Target ROAS requires 15 conversions
+  if (biddingStrategy.toLowerCase().includes('roas')) {
+    if (conversions >= 15) {
+      return {
+        ruleName: 'Google Smart Bidding (Target ROAS)',
+        status: 'pass',
+        message: `✅ Sufficient data: ${conversions}/15 conversions for Target ROAS`,
+        recommendation: 'Smart Bidding can optimize effectively. Monitor ROAS trends.',
+        source: 'google_official'
+      }
+    } else {
+      return {
+        ruleName: 'Google Smart Bidding (Target ROAS)',
+        status: 'fail',
+        message: `🚨 Insufficient data: ${conversions}/15 conversions required`,
+        recommendation: 'Switch to Manual CPC or Maximize Conversions until reaching 15 conversions.',
+        source: 'google_official'
+      }
+    }
+  }
+  
+  // Other Smart Bidding strategies require 50 conversions
+  if (conversions >= 50) {
+    return {
+      ruleName: 'Google Smart Bidding',
+      status: 'pass',
+      message: `✅ Smart Bidding optimized: ${conversions}/50 conversions`,
+      recommendation: 'Campaign has sufficient data for optimization. Continue monitoring.',
+      source: 'google_official'
+    }
+  } else {
+    return {
+      ruleName: 'Google Smart Bidding',
+      status: 'warning',
+      message: `⚠️ Limited data: ${conversions}/50 conversions for optimal Smart Bidding`,
+      recommendation: 'Consider Manual CPC until reaching 50 conversions, or be patient with learning.',
+      source: 'google_official'
+    }
+  }
+}
+
+// COMPREHENSIVE OPTIMIZATION ENGINE with Objective & Country Intelligence
 function generateOptimizationSuggestions(insights: any, objective: string, campaignData: any) {
   const suggestions: any[] = []
   
@@ -380,166 +723,287 @@ function generateOptimizationSuggestions(insights: any, objective: string, campa
   const inlineLinkClickCtr = parseFloat(data.inline_link_click_ctr || 0)
   
   // ====================
-  // CTR OPTIMIZATION
+  // CTR OPTIMIZATION (Country-Aware)
   // ====================
   if (impressions > 1000) { // Need sufficient data
-    if (ctr < 0.5) {
+    const targetCTR = countryBenchmark ? countryBenchmark.ctr.optimal : 1.5
+    const minCTR = countryBenchmark ? countryBenchmark.ctr.min : 0.8
+    const maxCTR = countryBenchmark ? countryBenchmark.ctr.max : 2.5
+    
+    if (ctr < minCTR * 0.7) {
       suggestions.push({
         type: 'error',
-        title: '🚨 Critical: Very Low Click-Through Rate',
-        description: `Your CTR is ${ctr.toFixed(2)}%, which is critically low (industry average: 1-2%). This indicates your ads are not resonating with your audience.`,
+        title: `🚨 Critical: Very Low Click-Through Rate${countryBenchmark ? ' for ' + countryBenchmark.country : ''}`,
+        description: `Your CTR is ${ctr.toFixed(2)}%${countryBenchmark ? `, critically low for ${countryBenchmark.country} (expected: ${minCTR}-${maxCTR}%)` : ', which is critically low (industry average: 1-2%)'}. Your ads are not resonating with your audience.`,
         priority: 'critical',
+        category: countryBenchmark ? 'country_benchmark' : 'best_practice',
         kpi: 'CTR',
         currentValue: `${ctr.toFixed(2)}%`,
-        targetValue: '1.5-2.5%',
+        targetValue: countryBenchmark ? `${minCTR}-${maxCTR}%` : '1.5-2.5%',
         recommendations: [
           '🎨 Creative Strategy: Your ad creative needs immediate attention. Test bold, eye-catching visuals that stand out in the feed',
           '📝 Ad Copy: Rewrite your headline to include a clear benefit or hook (e.g., "Save 50%" or "Limited Time Offer")',
           '🎯 Targeting Refinement: Your audience may be too broad or misaligned. Narrow targeting to highly relevant interests',
-          '📸 Test Different Formats: Try video ads if using images, or carousel if using single images',
+          countryBenchmark ? `🌍 ${countryBenchmark.country} Context: Local ad creative and messaging may need cultural adaptation` : '📸 Test Different Formats: Try video ads if using images, or carousel if using single images',
           '💡 Add Urgency: Include time-sensitive elements like "Today Only" or "Last Chance"',
           '🔍 Competitive Analysis: Research what competitors in your niche are doing differently'
         ],
-        impact: 'HIGH - Improving CTR will lower CPC and increase overall ROI'
+        impact: 'HIGH - Improving CTR will lower CPC and increase overall ROI',
+        countryBenchmark: countryBenchmark?.country
       })
-    } else if (ctr >= 0.5 && ctr < 1.0) {
+    } else if (ctr >= minCTR * 0.7 && ctr < targetCTR) {
       suggestions.push({
         type: 'warning',
-        title: '⚠️ Below Average Click-Through Rate',
-        description: `Your CTR is ${ctr.toFixed(2)}%, below the 1-2% industry benchmark. There's significant room for improvement.`,
+        title: `⚠️ Below Average Click-Through Rate${countryBenchmark ? ' for ' + countryBenchmark.country : ''}`,
+        description: `Your CTR is ${ctr.toFixed(2)}%${countryBenchmark ? `, below ${countryBenchmark.country} benchmark (${minCTR}-${maxCTR}%)` : ', below the 1-2% industry benchmark'}. There's room for improvement.`,
         priority: 'high',
+        category: countryBenchmark ? 'country_benchmark' : 'best_practice',
         kpi: 'CTR',
         currentValue: `${ctr.toFixed(2)}%`,
-        targetValue: '1.5-2.5%',
+        targetValue: countryBenchmark ? `${targetCTR.toFixed(1)}%+` : '1.5-2.5%',
         recommendations: [
           '✨ A/B Test Creative: Create 3-5 variations of your ad creative and let them run for 3-4 days',
           '🎬 Consider Video: Video ads typically achieve 2-3x higher CTR than static images',
           '💬 Use Social Proof: Add testimonials, ratings, or "Join 10,000+ customers" messaging',
           '🔥 Strengthen Value Prop: Make your unique benefit crystal clear in the first 3 words',
           '📱 Mobile Optimization: Ensure creative is optimized for mobile viewing (most traffic)',
-          '🎨 Update Creative Regularly: Refresh creative every 7-14 days to combat ad fatigue'
+          countryBenchmark ? `📍 ${countryBenchmark.country} Best Practices: Typical CTR is ${targetCTR.toFixed(1)}%` : '🎨 Update Creative Regularly: Refresh creative every 7-14 days to combat ad fatigue'
         ],
-        impact: 'MEDIUM-HIGH - Better CTR leads to lower costs and better quality score'
+        impact: 'MEDIUM-HIGH - Better CTR leads to lower costs and better quality score',
+        countryBenchmark: countryBenchmark?.country
       })
-    } else if (ctr >= 2.0) {
+    } else if (ctr >= maxCTR) {
       suggestions.push({
         type: 'success',
-        title: '✅ Excellent Click-Through Rate',
-        description: `Outstanding! Your CTR is ${ctr.toFixed(2)}%, significantly above the industry average. Your ads are highly engaging.`,
+        title: `✅ Excellent Click-Through Rate${countryBenchmark ? ' for ' + countryBenchmark.country : ''}`,
+        description: `Outstanding! Your CTR is ${ctr.toFixed(2)}%${countryBenchmark ? `, well above ${countryBenchmark.country} average (${targetCTR.toFixed(1)}%)` : ', significantly above the industry average'}. Your ads are highly engaging.`,
         priority: 'low',
+        category: countryBenchmark ? 'country_benchmark' : 'best_practice',
         kpi: 'CTR',
         currentValue: `${ctr.toFixed(2)}%`,
-        targetValue: 'Maintain 2%+',
+        targetValue: `Maintain ${maxCTR.toFixed(1)}%+`,
         recommendations: [
           '📈 Scale This Campaign: Increase budget by 20-30% to maximize reach while maintaining performance',
           '🔄 Duplicate Winning Formula: Use this creative style/messaging as a template for new campaigns',
           '🎯 Expand to Lookalike: Create lookalike audiences based on people who clicked',
           '📊 Analyze What Works: Document what makes this creative successful for future reference',
-          '💰 Consider Higher Budgets: High CTR = lower CPC, so you can afford to bid more aggressively',
+          countryBenchmark ? `🌍 ${countryBenchmark.country} Success: Your creative resonates exceptionally well in this market` : '💰 Consider Higher Budgets: High CTR = lower CPC, so you can afford to bid more aggressively',
           '🧪 Keep Testing: Even winners can be improved - test small variations'
         ],
-        impact: 'Maintain current performance while scaling'
+        impact: 'Maintain current performance while scaling',
+        countryBenchmark: countryBenchmark?.country
       })
     }
   }
   
   // ====================
-  // CPC OPTIMIZATION
+  // CPC OPTIMIZATION (Country-Aware)
   // ====================
   if (clicks > 50) {
-    if (cpc > 3.0) {
+    const targetCPC = countryBenchmark ? countryBenchmark.cpc.optimal : 1.00
+    const minCPC = countryBenchmark ? countryBenchmark.cpc.min : 0.50
+    const maxCPC = countryBenchmark ? countryBenchmark.cpc.max : 2.00
+    
+    if (cpc > maxCPC * 1.5) {
       suggestions.push({
         type: 'error',
-        title: '💸 High Cost Per Click - Budget Inefficiency',
-        description: `Your CPC is $${cpc.toFixed(2)}, which is expensive. This impacts your overall ROI and limits reach.`,
+        title: `💸 High Cost Per Click${countryBenchmark ? ' for ' + countryBenchmark.country : ''} - Budget Inefficiency`,
+        description: `Your CPC is $${cpc.toFixed(2)}${countryBenchmark ? `, which is ${((cpc / targetCPC - 1) * 100).toFixed(0)}% above ${countryBenchmark.country} optimal ($${targetCPC.toFixed(2)})` : ', which is expensive'}. This impacts your overall ROI and limits reach.`,
         priority: 'high',
+        category: countryBenchmark ? 'country_benchmark' : 'best_practice',
         kpi: 'CPC',
         currentValue: `$${cpc.toFixed(2)}`,
-        targetValue: '$0.50-$1.50',
+        targetValue: countryBenchmark ? `$${minCPC.toFixed(2)}-$${maxCPC.toFixed(2)}` : '$0.50-$1.50',
         recommendations: [
           '🎯 Bid Strategy: Switch to "Lowest Cost" or "Cost Cap" bid strategy if using "Highest Value"',
           '📊 Quality Score: Improve ad relevance by ensuring landing page matches ad message perfectly',
           '🚫 Negative Targeting: Exclude demographics/interests that click but don\'t convert',
           '⏰ Dayparting: Analyze when your CPC is lowest and focus budget on those hours',
-          '📍 Geographic Optimization: Pause high-CPC locations and focus on cost-efficient areas',
+          countryBenchmark ? `🌍 ${countryBenchmark.country} Competition: Market is ${countryBenchmark.competitionLevel} - consider audience refinement` : '📍 Geographic Optimization: Pause high-CPC locations and focus on cost-efficient areas',
           '📱 Placement Optimization: Review placement performance and exclude expensive placements',
           '🔄 Audience Refinement: Tighten targeting to reduce competition and lower costs'
         ],
-        impact: 'HIGH - Reducing CPC by 30% can double your reach with same budget'
+        impact: 'HIGH - Reducing CPC by 30% can double your reach with same budget',
+        countryBenchmark: countryBenchmark?.country
       })
-    } else if (cpc > 1.5 && cpc <= 3.0) {
+    } else if (cpc > targetCPC * 1.2 && cpc <= maxCPC * 1.5) {
       suggestions.push({
         type: 'warning',
-        title: '💵 Moderate CPC - Room for Improvement',
-        description: `Your CPC is $${cpc.toFixed(2)}. This is workable but could be optimized for better efficiency.`,
+        title: `💵 Moderate CPC${countryBenchmark ? ' for ' + countryBenchmark.country : ''} - Room for Improvement`,
+        description: `Your CPC is $${cpc.toFixed(2)}${countryBenchmark ? ` (${countryBenchmark.country} optimal: $${targetCPC.toFixed(2)})` : '. This is workable but could be optimized for better efficiency'}.`,
         priority: 'medium',
+        category: countryBenchmark ? 'country_benchmark' : 'best_practice',
         kpi: 'CPC',
         currentValue: `$${cpc.toFixed(2)}`,
-        targetValue: '$0.50-$1.50',
+        targetValue: countryBenchmark ? `$${targetCPC.toFixed(2)}` : '$0.50-$1.50',
         recommendations: [
           '📈 Improve CTR: Higher CTR automatically reduces CPC (they\'re inversely related)',
           '🎯 Audience Testing: Test different audience segments to find lower-cost pockets',
           '🔄 Lookalike Audiences: Use 1% lookalikes for lower CPCs vs broad targeting',
           '📊 Ad Scheduling: Identify and focus on time periods with lower CPCs',
-          '🖼️ Creative Refresh: New, engaging creative often leads to lower CPCs'
+          countryBenchmark ? `📍 ${countryBenchmark.country} Average: Typical CPC is $${targetCPC.toFixed(2)}` : '🖼️ Creative Refresh: New, engaging creative often leads to lower CPCs'
         ],
-        impact: 'MEDIUM - Even 20% CPC reduction significantly improves campaign economics'
+        impact: 'MEDIUM - Even 20% CPC reduction significantly improves campaign economics',
+        countryBenchmark: countryBenchmark?.country
       })
-    } else if (cpc <= 0.75) {
+    } else if (cpc <= minCPC * 1.2) {
       suggestions.push({
         type: 'success',
-        title: '💚 Excellent Cost Per Click',
-        description: `Your CPC of $${cpc.toFixed(2)} is excellent! You\'re acquiring clicks very efficiently.`,
+        title: `💚 Excellent Cost Per Click${countryBenchmark ? ' for ' + countryBenchmark.country : ''}`,
+        description: `Your CPC of $${cpc.toFixed(2)} is excellent${countryBenchmark ? ` for ${countryBenchmark.country} (optimal: $${targetCPC.toFixed(2)})` : ''}! You're acquiring clicks very efficiently.`,
         priority: 'low',
+        category: countryBenchmark ? 'country_benchmark' : 'best_practice',
         kpi: 'CPC',
         currentValue: `$${cpc.toFixed(2)}`,
-        targetValue: 'Maintain <$1.00',
+        targetValue: countryBenchmark ? `Maintain <$${maxCPC.toFixed(2)}` : 'Maintain <$1.00',
         recommendations: [
           '📈 Scale Aggressively: With such efficient CPCs, increase budget to maximize reach',
           '🎯 Expand Targeting: Test broader audiences while monitoring CPC',
           '💰 Consider CBO: Campaign Budget Optimization can find more efficient opportunities',
-          '📊 Document Success: Note what\'s working for this low CPC for future campaigns'
+          countryBenchmark ? `🌍 ${countryBenchmark.country} Performance: You're beating market averages - scale this success` : '📊 Document Success: Note what\'s working for this low CPC for future campaigns'
         ],
-        impact: 'Scale efficiently while maintaining low costs'
+        impact: 'Scale efficiently while maintaining low costs',
+        countryBenchmark: countryBenchmark?.country
       })
     }
   }
   
   // ====================
-  // CPM OPTIMIZATION
+  // CPM OPTIMIZATION (Country-Aware for Awareness Campaigns)
   // ====================
-  if (impressions > 1000) {
-    if (cpm > 20.0) {
+  if (impressions > 1000 && objectiveFamily === 'awareness') {
+    let cpmStatus = 'unknown'
+    let cpmMessage = ''
+    let cpmTarget = '$5-$15'
+    
+    if (countryBenchmark) {
+      // Use country-specific benchmarks
+      cpmTarget = `$${countryBenchmark.cpm.min}-$${countryBenchmark.cpm.max}`
+      const optimalCPM = countryBenchmark.cpm.optimal
+      const maxAcceptableCPM = countryBenchmark.cpm.max * 1.3
+      
+      if (cpm <= countryBenchmark.cpm.optimal) {
+        cpmStatus = 'excellent'
+        cpmMessage = `✅ Excellent CPM for ${countryBenchmark.country}: $${cpm.toFixed(2)} (${countryBenchmark.country} optimal: $${optimalCPM})`
+      } else if (cpm <= countryBenchmark.cpm.max) {
+        cpmStatus = 'good'
+        cpmMessage = `✅ Normal CPM for ${countryBenchmark.country}: $${cpm.toFixed(2)} (range: ${cpmTarget})`
+      } else if (cpm <= maxAcceptableCPM) {
+        cpmStatus = 'elevated'
+        cpmMessage = `⚠️ Elevated CPM for ${countryBenchmark.country}: $${cpm.toFixed(2)} vs ${cpmTarget} benchmark`
+      } else {
+        cpmStatus = 'high'
+        cpmMessage = `🚨 High CPM for ${countryBenchmark.country}: $${cpm.toFixed(2)} (${((cpm / optimalCPM - 1) * 100).toFixed(0)}% above optimal)`
+      }
+      
+      if (cpmStatus === 'high' || cpmStatus === 'elevated') {
+        suggestions.push({
+          type: cpmStatus === 'high' ? 'error' : 'warning',
+          title: `📢 ${cpmStatus === 'high' ? 'High' : 'Elevated'} CPM - ${countryBenchmark.country} Market`,
+          description: cpmMessage + `\\n\\nMarket context: ${countryBenchmark.marketContext}`,
+          priority: cpmStatus === 'high' ? 'high' : 'medium',
+          category: 'country_benchmark',
+          kpi: 'CPM',
+          currentValue: `$${cpm.toFixed(2)}`,
+          targetValue: cpmTarget,
+          recommendations: [
+            `📊 ${countryBenchmark.country} Context: Competition level is ${countryBenchmark.competitionLevel}`,
+            '🎯 Broaden Targeting: Overly narrow audiences increase CPM due to competition',
+            '📍 Geographic Testing: Compare performance across different regions within ' + countryBenchmark.country,
+            '🕐 Dayparting: Test different times of day to find lower-cost windows',
+            '📊 Placement Optimization: Review automatic placements and exclude expensive ones',
+            '🎨 Improve Relevance Score: Better ad quality = lower CPMs from Meta'
+          ],
+          impact: cpmStatus === 'high' ? 'HIGH - Reducing CPM will significantly improve reach' : 'MEDIUM - Room for CPM optimization',
+          countryBenchmark: countryBenchmark.country
+        })
+      } else if (cpmStatus === 'excellent') {
+        suggestions.push({
+          type: 'success',
+          title: `💚 Excellent CPM - ${countryBenchmark.country} Market`,
+          description: cpmMessage,
+          priority: 'low',
+          category: 'country_benchmark',
+          kpi: 'CPM',
+          currentValue: `$${cpm.toFixed(2)}`,
+          targetValue: cpmTarget,
+          recommendations: [
+            '📈 Scale Opportunity: Your CPM is efficient for ' + countryBenchmark.country + ' - consider increasing budget',
+            '🎯 Expand Reach: Test broader audiences while maintaining this efficiency',
+            '📊 Document Success: Note targeting/creative that\'s working for future campaigns'
+          ],
+          impact: 'Maintain efficient costs while scaling reach',
+          countryBenchmark: countryBenchmark.country
+        })
+      }
+    } else {
+      // Fallback to generic benchmarks if no country data
+      if (cpm > 20.0) {
+        suggestions.push({
+          type: 'warning',
+          title: '📢 High CPM - Expensive Impressions',
+          description: `Your CPM is $${cpm.toFixed(2)}, indicating high competition or expensive targeting.`,
+          priority: 'medium',
+          category: 'best_practice',
+          kpi: 'CPM',
+          currentValue: `$${cpm.toFixed(2)}`,
+          targetValue: cpmTarget,
+          recommendations: [
+            '🎯 Broaden Targeting: Overly narrow audiences have higher CPMs due to competition',
+            '📍 Geographic Expansion: Test less competitive markets or countries',
+            '🕐 Avoid Peak Times: CPMs are highest during prime time (evening) and weekends',
+            '📊 Placement Strategy: Manual placements often have lower CPMs than automatic',
+            '🎨 Improve Relevance Score: Better relevance = lower CPMs from Meta'
+          ],
+          impact: 'MEDIUM - Lower CPM means more impressions for same budget'
+        })
+      }
+    }
+  }
+  
+  // ====================
+  // OBJECTIVE-AWARE OPTIMIZATION CHECKS
+  // ====================
+  
+  // Detect objective family
+  const objectiveFamily = mapObjectiveToFamily(objective, 'meta')
+  const kpiConfig = OBJECTIVE_KPI_MAP[objectiveFamily]
+  
+  // Get country context if available
+  const countryCode = campaignData?.country_code || campaignData?.targeting_country
+  const countryBenchmark = countryCode ? getCountryBenchmark(countryCode) : null
+  
+  // Platform Rules Check (Meta Learning Phase)
+  if (objectiveFamily === 'sales' || objectiveFamily === 'leads') {
+    const learningPhaseCheck = checkMetaLearningPhase(conversions, conversions * 7, objective)
+    if (learningPhaseCheck.status !== 'pass') {
       suggestions.push({
-        type: 'warning',
-        title: '📢 High CPM - Expensive Impressions',
-        description: `Your CPM is $${cpm.toFixed(2)}, indicating high competition or expensive targeting.`,
-        priority: 'medium',
-        kpi: 'CPM',
-        currentValue: `$${cpm.toFixed(2)}`,
-        targetValue: '$5-$15',
-        recommendations: [
-          '🎯 Broaden Targeting: Overly narrow audiences have higher CPMs due to competition',
-          '📍 Geographic Expansion: Test less competitive markets or countries',
-          '🕐 Avoid Peak Times: CPMs are highest during prime time (evening) and weekends',
-          '📊 Placement Strategy: Manual placements often have lower CPMs than automatic',
-          '🎨 Improve Relevance Score: Better relevance = lower CPMs from Meta'
-        ],
-        impact: 'MEDIUM - Lower CPM means more impressions for same budget'
+        type: learningPhaseCheck.status === 'fail' ? 'error' : 'warning',
+        title: `🔴 PLATFORM RULE: ${learningPhaseCheck.ruleName}`,
+        description: learningPhaseCheck.message,
+        priority: learningPhaseCheck.status === 'fail' ? 'critical' : 'high',
+        category: 'platform_rule',
+        kpi: 'Optimization Events',
+        currentValue: conversions.toString(),
+        targetValue: '50/week',
+        recommendations: [learningPhaseCheck.recommendation],
+        impact: 'Meta cannot optimize effectively without sufficient conversion events',
+        source: learningPhaseCheck.source
       })
     }
   }
   
   // ====================
-  // CONVERSION OPTIMIZATION (Critical for most objectives)
+  // CONVERSION OPTIMIZATION (ONLY for Sales & Leads objectives)
   // ====================
-  if (objective && (objective.includes('CONVERSIONS') || objective.includes('OUTCOME'))) {
+  if (['sales', 'leads'].includes(objectiveFamily)) {
     if (clicks > 100 && conversions === 0) {
       suggestions.push({
         type: 'error',
         title: '🚨 CRITICAL: Zero Conversions Despite Traffic',
-        description: `You have ${clicks} clicks but ZERO conversions. This is a serious issue that needs immediate attention.`,
+        description: `You have ${clicks} clicks but ZERO conversions. This is a ${objectiveFamily.toUpperCase()} campaign - conversions are critical.`,
         priority: 'critical',
+        category: 'conversion',
         kpi: 'Conversions',
         currentValue: '0',
         targetValue: `${(clicks * 0.02).toFixed(0)}+ (2% conv rate)`,
@@ -636,6 +1100,246 @@ function generateOptimizationSuggestions(insights: any, objective: string, campa
         ],
         impact: 'Need more data before optimization'
       })
+    }
+  }
+  
+  // ====================
+  // AWARENESS OPTIMIZATION (Reach, Impressions, Frequency)
+  // ====================
+  if (objectiveFamily === 'awareness') {
+    // Check reach efficiency
+    if (impressions > 5000 && reach > 0) {
+      const reachRatio = (reach / impressions) * 100
+      
+      if (reachRatio < 40) {
+        suggestions.push({
+          type: 'warning',
+          title: '👥 Low Reach Efficiency - High Frequency Issue',
+          description: `Only ${reachRatio.toFixed(0)}% of impressions are reaching unique users. You're showing ads to same people too often.`,
+          priority: 'high',
+          category: 'awareness',
+          kpi: 'Reach Ratio',
+          currentValue: `${reachRatio.toFixed(0)}%`,
+          targetValue: '60-80%',
+          recommendations: [
+            '🎯 EXPAND AUDIENCE: Broaden targeting to reach more unique people',
+            '📊 Lower Budget: Reduce daily budget to decrease frequency pressure',
+            '🔄 Rotate Creatives: Use multiple ad variations to reduce fatigue',
+            '📍 Geographic Expansion: Add more locations to increase potential reach',
+            '👥 Broader Demographics: Widen age range or interests to access more users'
+          ],
+          impact: 'HIGH - For awareness campaigns, reaching MORE people is better than reaching same people many times'
+        })
+      }
+    }
+    
+    // Check if frequency is optimal for awareness
+    if (frequency > 0 && impressions > 1000) {
+      if (frequency < 1.5) {
+        suggestions.push({
+          type: 'info',
+          title: '📊 Frequency Could Be Higher',
+          description: `Frequency of ${frequency.toFixed(2)} is very low. For awareness, 2-3 exposures help with brand recall.`,
+          priority: 'low',
+          category: 'awareness',
+          kpi: 'Frequency',
+          currentValue: frequency.toFixed(2),
+          targetValue: '2.0-3.0 (optimal for awareness)',
+          recommendations: [
+            '💰 Increase Budget: Higher spend can achieve optimal 2-3x frequency',
+            '🎯 Narrow Audience Slightly: More focused targeting increases frequency naturally',
+            '⏱️ Run Longer: Extend campaign duration to build frequency over time'
+          ],
+          impact: 'Brand recall improves significantly with 2-3 exposures'
+        })
+      } else if (frequency >= 1.8 && frequency <= 3.0) {
+        suggestions.push({
+          type: 'success',
+          title: '✅ Optimal Frequency for Awareness',
+          description: `Frequency of ${frequency.toFixed(2)} is perfect for brand awareness. People see your brand 2-3 times.`,
+          priority: 'low',
+          category: 'awareness',
+          kpi: 'Frequency',
+          currentValue: frequency.toFixed(2),
+          targetValue: '2.0-3.0',
+          recommendations: [
+            '📈 Maintain Current Strategy: Your frequency is in the optimal zone',
+            '🎯 Scale Gradually: Increase budget by 20% to reach more people at same frequency',
+            '📊 Monitor Reach Growth: Focus on expanding unique reach while maintaining frequency'
+          ],
+          impact: 'Optimal frequency for brand recall without ad fatigue'
+        })
+      }
+    }
+    
+    // Check if reach target is being met
+    if (reach > 0 && impressions > 5000) {
+      const targetReach = countryBenchmark ? 50000 : 100000
+      if (reach < targetReach / 2) {
+        suggestions.push({
+          type: 'warning',
+          title: '👥 Limited Reach for Awareness Campaign',
+          description: `Only ${reach.toLocaleString()} people reached. Awareness campaigns need broader reach.`,
+          priority: 'medium',
+          category: 'awareness',
+          kpi: 'Reach',
+          currentValue: reach.toLocaleString(),
+          targetValue: `${(targetReach / 1000).toFixed(0)}K+`,
+          recommendations: [
+            '💰 Increase Budget: More budget = more reach for awareness objectives',
+            '🎯 Broader Targeting: Expand interests, lookalikes, or demographics',
+            '📍 Geographic Expansion: Add more countries/regions to increase potential audience',
+            '📊 Longer Campaign: Extend duration to accumulate more reach over time',
+            '🎨 Test Multiple Creatives: Different ads can reach different audience segments'
+          ],
+          impact: 'Awareness campaigns succeed by reaching large, unique audiences'
+        })
+      }
+    }
+  }
+  
+  // ====================
+  // TRAFFIC OPTIMIZATION (Clicks, CPC, Landing Page Views)
+  // ====================
+  if (objectiveFamily === 'traffic') {
+    if (clicks > 50 && cpc > 0) {
+      const targetCPC = countryBenchmark ? countryBenchmark.cpc.optimal : 1.00
+      const maxAcceptableCPC = targetCPC * 1.8
+      
+      if (cpc > maxAcceptableCPC) {
+        suggestions.push({
+          type: 'warning',
+          title: '💸 High Cost Per Click for Traffic Campaign',
+          description: `CPC of $${cpc.toFixed(2)} is high${countryBenchmark ? ' for ' + countryBenchmark.country : ''}. Traffic campaigns should optimize for cheap clicks.`,
+          priority: 'high',
+          category: 'traffic',
+          kpi: 'CPC',
+          currentValue: `$${cpc.toFixed(2)}`,
+          targetValue: countryBenchmark ? `$${countryBenchmark.cpc.min}-$${countryBenchmark.cpc.max}` : '<$1.00',
+          recommendations: [
+            '🎯 Bid Strategy: Ensure using "Maximize Link Clicks" or "Lowest Cost" bidding',
+            '📊 Improve CTR: Higher CTR automatically reduces CPC',
+            '🎨 Test Creative: More engaging ads get cheaper clicks',
+            '👥 Audience Optimization: Test broader audiences for lower competition',
+            countryBenchmark ? `📍 ${countryBenchmark.country} Context: Expected CPC is $${countryBenchmark.cpc.optimal}` : '📍 Test Different Geos: Some markets have cheaper traffic'
+          ],
+          impact: 'Reducing CPC doubles traffic volume with same budget',
+          countryBenchmark: countryBenchmark?.country
+        })
+      }
+    }
+  }
+  
+  // ====================
+  // ENGAGEMENT OPTIMIZATION (Likes, Comments, Shares)
+  // ====================
+  if (objectiveFamily === 'engagement') {
+    if (impressions > 1000) {
+      // Calculate engagement rate if we have the data
+      const likes = parseInt(data.likes || 0)
+      const comments = parseInt(data.comments || 0)
+      const shares = parseInt(data.shares || 0)
+      const totalEngagements = likes + comments + shares
+      
+      if (totalEngagements > 0 && impressions > 0) {
+        const engagementRate = (totalEngagements / impressions) * 100
+        
+        if (engagementRate < 1.0) {
+          suggestions.push({
+            type: 'warning',
+            title: '💬 Low Engagement Rate',
+            description: `Engagement rate of ${engagementRate.toFixed(2)}% is below 2-3% benchmark for engagement campaigns.`,
+            priority: 'high',
+            category: 'engagement',
+            kpi: 'Engagement Rate',
+            currentValue: `${engagementRate.toFixed(2)}%`,
+            targetValue: '2-5%',
+            recommendations: [
+              '📸 Use Native-Looking Content: Organic-style posts get more engagement than promotional ads',
+              '❓ Ask Questions: Posts with questions get 4x more comments',
+              '🎥 Video Content: Videos get 135% more engagement than static images',
+              '💬 Encourage Sharing: Add "Tag a friend" or "Share if you agree" copy',
+              '🎁 Interactive Content: Polls, quizzes, or contests drive engagement',
+              '⏰ Posting Time: Test different times when your audience is most active'
+            ],
+            impact: 'Higher engagement rate improves organic reach and brand affinity'
+          })
+        } else if (engagementRate >= 3.0) {
+          suggestions.push({
+            type: 'success',
+            title: '🌟 Excellent Engagement Rate',
+            description: `${engagementRate.toFixed(2)}% engagement rate is outstanding! Your content resonates strongly.`,
+            priority: 'low',
+            category: 'engagement',
+            kpi: 'Engagement Rate',
+            currentValue: `${engagementRate.toFixed(2)}%`,
+            targetValue: 'Maintain 3%+',
+            recommendations: [
+              '🔄 Replicate Success: Use this content style/format for other campaigns',
+              '📈 Scale Budget: Increase spend to maximize engaged audience',
+              '🎯 Create Lookalike: Build audience of engaged users for future targeting',
+              '📊 Analyze Top Content: Document what makes this content so engaging'
+            ],
+            impact: 'Leverage high engagement to build brand community'
+          })
+        }
+      }
+    }
+  }
+  
+  // ====================
+  // LEADS OPTIMIZATION (Lead Forms, Cost Per Lead)
+  // ====================
+  if (objectiveFamily === 'leads') {
+    const leads = parseInt(data.leads || conversions || 0)
+    const costPerLead = leads > 0 ? spend / leads : 0
+    
+    if (clicks > 50 && leads === 0) {
+      suggestions.push({
+        type: 'error',
+        title: '📝 Zero Leads Despite Traffic',
+        description: `You have ${clicks} clicks but no leads generated. Form conversion issue.`,
+        priority: 'critical',
+        category: 'leads',
+        kpi: 'Leads',
+        currentValue: '0',
+        targetValue: `${(clicks * 0.05).toFixed(0)}+ (5% form conversion)`,
+        recommendations: [
+          '📋 Use Instant Forms: Meta Lead Ads forms convert 3-5x better than landing pages',
+          '✂️ Reduce Form Fields: Only ask essential info (name + email = best conversion)',
+          '🎁 Stronger Incentive: Offer valuable lead magnet (guide, discount, template)',
+          '⚡ Form Friction: Remove optional fields, simplify privacy policy language',
+          '📱 Mobile Optimization: Test form experience on mobile devices',
+          '🎯 Qualifying Questions: Add 1-2 questions to improve lead quality'
+        ],
+        impact: 'CRITICAL - Fix form conversion to make campaign profitable'
+      })
+    } else if (leads > 10 && costPerLead > 0) {
+      const targetCPL = countryBenchmark ? 
+        (countryBenchmark.costPerConversion.optimal * 0.5) : // Leads typically cheaper than sales
+        15
+      
+      if (costPerLead > targetCPL * 2) {
+        suggestions.push({
+          type: 'warning',
+          title: '💰 High Cost Per Lead',
+          description: `Cost per lead of $${costPerLead.toFixed(2)} is expensive${countryBenchmark ? ' for ' + countryBenchmark.country : ''}.`,
+          priority: 'high',
+          category: 'leads',
+          kpi: 'Cost Per Lead',
+          currentValue: `$${costPerLead.toFixed(2)}`,
+          targetValue: countryBenchmark ? `~$${targetCPL.toFixed(0)}` : '<$20',
+          recommendations: [
+            '📋 Instant Forms: Switching to Meta Lead Ads reduces cost by 50-70%',
+            '🎁 Better Incentive: Improve lead magnet quality to boost form completion',
+            '🎯 Audience Refinement: Target people more likely to need your offer',
+            '🎨 Test Creative: Different messaging can attract more qualified leads',
+            countryBenchmark ? `📍 ${countryBenchmark.country} Benchmark: Typical CPL is $${targetCPL}` : '📊 Consider lead quality vs quantity tradeoff'
+          ],
+          impact: 'Lower CPL increases lead volume with same budget',
+          countryBenchmark: countryBenchmark?.country
+        })
+      }
     }
   }
   
@@ -2557,6 +3261,9 @@ app.get('/', (c) => {
                             <span class="px-3 py-1 text-xs font-semibold rounded-full \${getStatusBadge(campaign.status)}">
                                 \${campaign.status}
                             </span>
+                            <span class="px-3 py-1 text-xs font-semibold rounded-full \${getObjectiveBadge(campaign.objective)}">
+                                \${getObjectiveIcon(campaign.objective)} \${getObjectiveFamily(campaign.objective).toUpperCase()}
+                            </span>
                         </div>
                         <div class="flex items-center space-x-4 text-sm text-gray-600">
                             <span><i class="fas fa-bullseye mr-1"></i> <strong>Objective:</strong> \${formatObjective(campaign.objective)}</span>
@@ -2754,12 +3461,37 @@ app.get('/', (c) => {
                             <div class="flex-1">
                                 <div class="flex items-start justify-between mb-2">
                                     <h4 class="text-lg font-bold text-gray-800">\${suggestion.title}</h4>
-                                    <span class="px-3 py-1 text-xs font-bold rounded-full ml-4 flex-shrink-0 \${getPriorityBadge(suggestion.priority)}">
-                                        \${suggestion.priority.toUpperCase()}
-                                    </span>
+                                    <div class="flex items-center space-x-2 ml-4 flex-shrink-0">
+                                        <span class="px-3 py-1 text-xs font-bold rounded-full \${getPriorityBadge(suggestion.priority)}">
+                                            \${suggestion.priority.toUpperCase()}
+                                        </span>
+                                        \${suggestion.category ? \`
+                                            <span class="px-3 py-1 text-xs font-semibold rounded-full \${getCategoryBadge(suggestion.category)}">
+                                                \${getCategoryLabel(suggestion.category)}
+                                            </span>
+                                        \` : ''}
+                                    </div>
                                 </div>
                                 
                                 <p class="text-gray-700 mb-3 leading-relaxed">\${suggestion.description}</p>
+                                
+                                \${suggestion.countryBenchmark ? \`
+                                    <div class="text-xs bg-blue-50 border border-blue-200 rounded p-2 mb-3 flex items-center">
+                                        <i class="fas fa-globe text-blue-600 mr-2"></i>
+                                        <span class="text-blue-800">
+                                            <strong>Market Context:</strong> Benchmarked against \${suggestion.countryBenchmark} market data
+                                        </span>
+                                    </div>
+                                \` : ''}
+                                
+                                \${suggestion.source ? \`
+                                    <div class="text-xs bg-purple-50 border border-purple-200 rounded p-2 mb-3 flex items-center">
+                                        <i class="fas fa-shield-alt text-purple-600 mr-2"></i>
+                                        <span class="text-purple-800">
+                                            <strong>Source:</strong> \${suggestion.source === 'meta_official' ? 'Meta Official Documentation' : 'Google Official Guidelines'}
+                                        </span>
+                                    </div>
+                                \` : ''}
                                 
                                 \${suggestion.kpi ? \`
                                     <div class="grid grid-cols-3 gap-3 mb-3 p-3 bg-gray-50 rounded">
@@ -2894,6 +3626,86 @@ app.get('/', (c) => {
                 'DELETED': 'bg-red-100 text-red-800'
             };
             return badges[status] || 'bg-gray-100 text-gray-800';
+        }
+        
+        // Objective Family Detection (matches backend logic)
+        function getObjectiveFamily(objective) {
+            const obj = (objective || '').toLowerCase();
+            
+            if (obj.includes('awareness') || obj.includes('reach') || obj.includes('brand')) {
+                return 'awareness';
+            }
+            if (obj.includes('traffic') || obj.includes('link_clicks')) {
+                return 'traffic';
+            }
+            if (obj.includes('engagement') || obj.includes('post_engagement') || obj.includes('video_views')) {
+                return 'engagement';
+            }
+            if (obj.includes('lead') || obj.includes('messages')) {
+                return 'leads';
+            }
+            if (obj.includes('app') || obj.includes('mobile')) {
+                return 'app_promotion';
+            }
+            if (obj.includes('sales') || obj.includes('conversions') || obj.includes('outcome_sales') || obj.includes('purchase')) {
+                return 'sales';
+            }
+            
+            return 'sales'; // Default fallback
+        }
+        
+        function getObjectiveBadge(objective) {
+            const family = getObjectiveFamily(objective);
+            const badges = {
+                'awareness': 'bg-blue-100 text-blue-800',
+                'traffic': 'bg-cyan-100 text-cyan-800',
+                'engagement': 'bg-purple-100 text-purple-800',
+                'leads': 'bg-green-100 text-green-800',
+                'app_promotion': 'bg-indigo-100 text-indigo-800',
+                'sales': 'bg-pink-100 text-pink-800'
+            };
+            return badges[family] || 'bg-gray-100 text-gray-800';
+        }
+        
+        function getObjectiveIcon(objective) {
+            const family = getObjectiveFamily(objective);
+            const icons = {
+                'awareness': '👁️',
+                'traffic': '🚗',
+                'engagement': '💬',
+                'leads': '📝',
+                'app_promotion': '📱',
+                'sales': '💰'
+            };
+            return icons[family] || '🎯';
+        }
+        
+        function getCategoryBadge(category) {
+            const badges = {
+                'platform_rule': 'bg-red-100 text-red-800 border border-red-300',
+                'country_benchmark': 'bg-blue-100 text-blue-800 border border-blue-300',
+                'best_practice': 'bg-yellow-100 text-yellow-800 border border-yellow-300',
+                'awareness': 'bg-blue-50 text-blue-700',
+                'traffic': 'bg-cyan-50 text-cyan-700',
+                'engagement': 'bg-purple-50 text-purple-700',
+                'leads': 'bg-green-50 text-green-700',
+                'conversion': 'bg-pink-50 text-pink-700'
+            };
+            return badges[category] || 'bg-gray-100 text-gray-800';
+        }
+        
+        function getCategoryLabel(category) {
+            const labels = {
+                'platform_rule': '🔴 PLATFORM RULE',
+                'country_benchmark': '🌍 COUNTRY BENCHMARK',
+                'best_practice': '📊 BEST PRACTICE',
+                'awareness': 'AWARENESS',
+                'traffic': 'TRAFFIC',
+                'engagement': 'ENGAGEMENT',
+                'leads': 'LEADS',
+                'conversion': 'CONVERSION'
+            };
+            return labels[category] || category.toUpperCase();
         }
         
         function getPriorityBadge(priority) {
