@@ -1,4 +1,4 @@
-# PinPointer Meta Ads Optimizer v3.6.0
+# PinPointer Meta Ads Optimizer v3.6.1
 
 **Unified Dashboard for Meta Ads, Google Ads, and Google Analytics**
 
@@ -333,13 +333,29 @@ For issues or questions, please open an issue on GitHub or contact the author.
 
 ---
 
-**Version**: 3.6.0  
+**Version**: 3.6.1 (Hotfix)  
 **Last Updated**: June 4, 2026  
 **Status**: ✅ Production Ready
 
 ---
 
-## 📋 Recent Updates (v3.6.0)
+## 📋 Recent Updates
+
+### v3.6.1 (Hotfix - June 4, 2026)
+**Critical Bug Fixes:**
+- 🐛 Fixed "Cannot access 'c' before initialization" error in optimization modal
+- 🐛 Removed all arrow functions from template literals (replaced with traditional for loops)
+- 🐛 Fixed insights not persisting in campaigns array after filtering
+- 🐛 Added `updateCampaignInsights()` helper to sync data across arrays
+- 📈 Build size: 201.28 kB (+2 kB for stability improvements)
+
+**What This Fixes:**
+- Optimization button now always works without errors
+- Modal opens smoothly and displays suggestions correctly
+- Campaigns retain insights data after filtering operations
+- No more JavaScript console errors
+
+### v3.6.0 (Major Release - June 4, 2026)
 
 ### New Features
 - ✨ Campaign search bar with real-time filtering
