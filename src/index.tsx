@@ -2346,6 +2346,52 @@ app.get('/', (c) => {
                             <option value="">Loading ad accounts...</option>
                         </select>
                     </div>
+                    
+                    <!-- Campaign Filters -->
+                    <div id="campaignFilters" class="glass-effect rounded-xl p-6 mb-6 hidden">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800">
+                                <i class="fas fa-filter mr-2"></i> Filter Campaigns
+                            </h3>
+                            <span id="campaignCount" class="text-sm text-gray-600">0 campaigns</span>
+                        </div>
+                        
+                        <!-- Search Bar -->
+                        <div class="mb-4">
+                            <div class="relative">
+                                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                <input type="text" 
+                                       id="campaignSearch" 
+                                       placeholder="Search campaigns by name..." 
+                                       onkeyup="filterCampaigns()"
+                                       class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pinpoint-pink">
+                            </div>
+                        </div>
+                        
+                        <!-- Status Filter Buttons -->
+                        <div class="flex items-center space-x-3">
+                            <button onclick="setStatusFilter('all')" 
+                                    id="filter-all" 
+                                    class="status-filter-btn px-4 py-2 rounded-lg bg-pinpoint-pink text-white font-semibold transition">
+                                <i class="fas fa-list mr-2"></i> All Campaigns
+                            </button>
+                            <button onclick="setStatusFilter('ACTIVE')" 
+                                    id="filter-ACTIVE" 
+                                    class="status-filter-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 font-semibold transition">
+                                <i class="fas fa-play-circle mr-2"></i> Active
+                            </button>
+                            <button onclick="setStatusFilter('PAUSED')" 
+                                    id="filter-PAUSED" 
+                                    class="status-filter-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 font-semibold transition">
+                                <i class="fas fa-pause-circle mr-2"></i> Paused
+                            </button>
+                            <button onclick="setStatusFilter('ended')" 
+                                    id="filter-ended" 
+                                    class="status-filter-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 font-semibold transition">
+                                <i class="fas fa-stop-circle mr-2"></i> Ended
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Campaign List -->
@@ -2698,6 +2744,9 @@ app.get('/', (c) => {
     <script>
         let currentAccount = null;
         let campaigns = [];
+        let allCampaigns = []; // Store all campaigns for filtering
+        let currentStatusFilter = 'all';
+        let currentSearchTerm = '';
         
         // Tab switching functionality
         function showTab(tabName) {
@@ -3181,23 +3230,122 @@ app.get('/', (c) => {
             
             try {
                 const response = await axios.get(\`/api/account/\${accountId}/campaigns\`);
-                campaigns = response.data.data || [];
+                allCampaigns = response.data.data || [];
+                campaigns = [...allCampaigns]; // Copy for filtering
                 
-                if (campaigns.length === 0) {
+                // Show filter bar
+                document.getElementById('campaignFilters').classList.remove('hidden');
+                
+                if (allCampaigns.length === 0) {
                     campaignsList.innerHTML = '<div class="text-center py-12"><i class="fas fa-inbox text-4xl text-gray-400"></i><p class="mt-4 text-gray-600">No campaigns found in this account</p></div>';
+                    updateCampaignCount(0);
                     return;
                 }
                 
-                campaignsList.innerHTML = '';
+                // Reset filters
+                currentStatusFilter = 'all';
+                currentSearchTerm = '';
+                document.getElementById('campaignSearch').value = '';
                 
-                for (const campaign of campaigns) {
-                    await loadCampaignCard(campaign);
-                }
+                // Apply filters and load campaigns
+                filterCampaigns();
             } catch (error) {
                 console.error('Error loading campaigns:', error);
                 campaignsList.innerHTML = '<div class="text-center py-12"><i class="fas fa-exclamation-triangle text-4xl text-red-400"></i><p class="mt-4 text-red-600">Error loading campaigns: ' + (error.response?.data?.error || error.message) + '</p></div>';
+                document.getElementById('campaignFilters').classList.add('hidden');
             }
         }
+        
+        // Filter campaigns based on status and search
+        function filterCampaigns() {
+            const searchTerm = document.getElementById('campaignSearch').value.toLowerCase();
+            currentSearchTerm = searchTerm;
+            
+            // Filter by status and search
+            campaigns = allCampaigns.filter(campaign => {
+                const matchesStatus = currentStatusFilter === 'all' || 
+                                     (currentStatusFilter === 'ended' ? isEnded(campaign) : campaign.status === currentStatusFilter);
+                const matchesSearch = campaign.name.toLowerCase().includes(searchTerm);
+                return matchesStatus && matchesSearch;
+            });
+            
+            // Update display
+            renderFilteredCampaigns();
+        }
+        
+        // Check if campaign has ended
+        function isEnded(campaign) {
+            if (campaign.stop_time && new Date(campaign.stop_time) < new Date()) {
+                return true;
+            }
+            return false;
+        }
+        
+        // Set status filter
+        function setStatusFilter(status) {
+            currentStatusFilter = status;
+            
+            // Update button styles
+            document.querySelectorAll('.status-filter-btn').forEach(btn => {
+                btn.classList.remove('bg-pinpoint-pink', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
+            });
+            
+            const activeBtn = document.getElementById('filter-' + status);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
+                activeBtn.classList.add('bg-pinpoint-pink', 'text-white');
+            }
+            
+            filterCampaigns();
+        }
+        
+        // Render filtered campaigns
+        async function renderFilteredCampaigns() {
+            const campaignsList = document.getElementById('campaignsList');
+            
+            if (campaigns.length === 0) {
+                campaignsList.innerHTML = '<div class="text-center py-12"><i class="fas fa-search text-4xl text-gray-400"></i><p class="mt-4 text-gray-600">No campaigns match your filters</p></div>';
+                updateCampaignCount(0);
+                return;
+            }
+            
+            campaignsList.innerHTML = '<div class="text-center py-12 loading"><i class="fas fa-spinner fa-spin text-4xl text-gray-400"></i><p class="mt-4 text-gray-600">Loading campaigns...</p></div>';
+            
+            campaignsList.innerHTML = '';
+            updateCampaignCount(campaigns.length);
+            
+            for (const campaign of campaigns) {
+                await loadCampaignCard(campaign);
+            }
+        }
+        
+        // Update campaign count
+        function updateCampaignCount(count) {
+            const countEl = document.getElementById('campaignCount');
+            if (countEl) {
+                countEl.textContent = count + ' campaign' + (count !== 1 ? 's' : '');
+            }
+        }
+        
+        // Refresh data with current date range
+        function refreshData() {
+            if (currentAccount) {
+                loadCampaigns();
+            }
+        }
+        
+        // Date range change handler
+        document.addEventListener('DOMContentLoaded', () => {
+            const dateRangeSelect = document.getElementById('dateRange');
+            if (dateRangeSelect) {
+                dateRangeSelect.addEventListener('change', () => {
+                    if (campaigns.length > 0) {
+                        renderFilteredCampaigns();
+                    }
+                });
+            }
+        });
         
         // Get the dynamic "Results" metric based on campaign objective
         function getResultMetricForObjective(objective, insights) {
@@ -3462,6 +3610,7 @@ app.get('/', (c) => {
                             Unable to load metrics: \${response.data.error}
                         </div>
                     \`;
+                    campaign.insights = null; // Mark as no data
                     return;
                 }
                 
@@ -3474,6 +3623,7 @@ app.get('/', (c) => {
                             No performance data available yet. Campaign may be too new or paused.
                         </div>
                     \`;
+                    campaign.insights = null; // Mark as no data
                     return;
                 }
                 
@@ -3568,8 +3718,20 @@ app.get('/', (c) => {
         }
         
         async function showOptimization(campaignId, objective) {
-            const campaign = campaigns.find(c => c.id === campaignId);
-            if (!campaign || !campaign.insights) {
+            let campaign = null;
+            for (let i = 0; i < campaigns.length; i++) {
+                if (campaigns[i].id === campaignId) {
+                    campaign = campaigns[i];
+                    break;
+                }
+            }
+            
+            if (!campaign) {
+                alert('Campaign not found. Please refresh the page.');
+                return;
+            }
+            
+            if (!campaign.insights) {
                 alert('Please wait for campaign data to load completely before viewing optimization suggestions.');
                 return;
             }
