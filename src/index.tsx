@@ -2325,10 +2325,22 @@ app.get('/', (c) => {
                             <select id="dateRange" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pinpoint-pink">
                                 <option value="today">Today</option>
                                 <option value="yesterday">Yesterday</option>
+                                <option value="last_3d">Last 3 Days</option>
                                 <option value="last_7d">Last 7 Days</option>
+                                <option value="last_14d">Last 14 Days</option>
                                 <option value="last_30d" selected>Last 30 Days</option>
+                                <option value="last_90d">Last 90 Days</option>
+                                <option value="this_week_sun_today">This Week (Sun - Today)</option>
+                                <option value="this_week_mon_today">This Week (Mon - Today)</option>
+                                <option value="last_week_sun_sat">Last Week (Sun - Sat)</option>
+                                <option value="last_week_mon_sun">Last Week (Mon - Sun)</option>
                                 <option value="this_month">This Month</option>
                                 <option value="last_month">Last Month</option>
+                                <option value="this_quarter">This Quarter</option>
+                                <option value="last_quarter">Last Quarter</option>
+                                <option value="this_year">This Year</option>
+                                <option value="last_year">Last Year</option>
+                                <option value="lifetime">Lifetime</option>
                             </select>
                             <button onclick="refreshData()" class="px-4 py-2 bg-pinpoint-pink text-white rounded-lg hover:bg-pinpoint-red transition shadow-md">
                                 <i class="fas fa-sync-alt mr-2"></i> Refresh
@@ -2751,15 +2763,17 @@ app.get('/', (c) => {
         // Tab switching functionality
         function showTab(tabName) {
             // Hide all tab content
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.add('hidden');
-            });
+            const tabContents = document.querySelectorAll('.tab-content');
+            for (let i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.add('hidden');
+            }
             
             // Remove active state from all tab buttons
-            document.querySelectorAll('.tab-button').forEach(button => {
-                button.classList.remove('bg-pinpoint-pink', 'text-white');
-                button.classList.add('text-gray-700', 'hover:bg-gray-100');
-            });
+            const tabButtons = document.querySelectorAll('.tab-button');
+            for (let i = 0; i < tabButtons.length; i++) {
+                tabButtons[i].classList.remove('bg-pinpoint-pink', 'text-white');
+                tabButtons[i].classList.add('text-gray-700', 'hover:bg-gray-100');
+            }
             
             // Show selected tab content
             document.getElementById('content-' + tabName).classList.remove('hidden');
@@ -2894,14 +2908,15 @@ app.get('/', (c) => {
                 
                 if (response.data.success && response.data.accounts && response.data.accounts.length > 0) {
                     select.innerHTML = '<option value="">Select an account...</option>';
-                    response.data.accounts.forEach(account => {
+                    for (let i = 0; i < response.data.accounts.length; i++) {
+                        const account = response.data.accounts[i];
                         const option = document.createElement('option');
                         // Extract customer ID from resource name (format: customers/1234567890)
                         const customerId = account.split('/')[1];
                         option.value = customerId;
                         option.textContent = \`Customer ID: \${customerId}\`;
                         select.appendChild(option);
-                    });
+                    }
                 } else if (response.data.needsDeveloperToken) {
                     select.innerHTML = '<option value="">Developer Token Required - See Console</option>';
                     console.warn('PinPointer:', response.data.message);
@@ -2937,12 +2952,13 @@ app.get('/', (c) => {
                 
                 if (response.data.success && response.data.properties && response.data.properties.length > 0) {
                     select.innerHTML = '<option value="">Select a property...</option>';
-                    response.data.properties.forEach(property => {
+                    for (let i = 0; i < response.data.properties.length; i++) {
+                        const property = response.data.properties[i];
                         const option = document.createElement('option');
                         option.value = property.name;
                         option.textContent = \`\${property.displayName} (\${property.account})\`;
                         select.appendChild(option);
-                    });
+                    }
                 } else {
                     select.innerHTML = '<option value="">No properties found</option>';
                 }
@@ -2980,7 +2996,8 @@ app.get('/', (c) => {
                     const dateRangeText = days === 7 ? '7 Days' : days === 14 ? '14 Days' : days === 30 ? '30 Days' : days === 60 ? '60 Days' : '90 Days';
                     let html = '<div class="mb-4 text-sm text-gray-600"><i class="fas fa-calendar mr-2"></i>Showing data for last ' + dateRangeText + '</div>';
                     html += '<div class="space-y-4">';
-                    response.data.campaigns.forEach(campaign => {
+                    for (let i = 0; i < response.data.campaigns.length; i++) {
+                        const campaign = response.data.campaigns[i];
                         html += '<div class="glass-effect rounded-xl p-6 hover:shadow-lg transition">' +
                                 '<div class="flex items-start justify-between mb-4"><div class="flex-1">' +
                                 '<h4 class="text-lg font-bold text-gray-800">' + (campaign.name || 'Unnamed Campaign') + '</h4>' +
@@ -3003,7 +3020,7 @@ app.get('/', (c) => {
                                 '<div class="text-center p-3 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg"><p class="text-xs text-gray-600 mb-1">Budget</p>' +
                                 '<p class="text-lg font-bold text-indigo-600">' + (campaign.budget || 'N/A') + '</p></div>' +
                                 '</div></div>';
-                    });
+                    }
                     html += '</div>';
                     container.innerHTML = html;
                 } else {
@@ -3196,13 +3213,14 @@ app.get('/', (c) => {
                 
                 if (response.data.data && response.data.data.length > 0) {
                     select.innerHTML = '<option value="">Select an ad account...</option>';
-                    response.data.data.forEach(account => {
+                    for (let i = 0; i < response.data.data.length; i++) {
+                        const account = response.data.data[i];
                         const option = document.createElement('option');
                         option.value = account.account_id;
                         option.textContent = \`\${account.name} (ID: \${account.account_id})\`;
                         option.dataset.account = JSON.stringify(account);
                         select.appendChild(option);
-                    });
+                    }
                 } else {
                     console.log('PinPointer: No accounts found');
                     select.innerHTML = '<option value="">No ad accounts found</option>';
@@ -3261,13 +3279,18 @@ app.get('/', (c) => {
             const searchTerm = document.getElementById('campaignSearch').value.toLowerCase();
             currentSearchTerm = searchTerm;
             
-            // Filter by status and search
-            campaigns = allCampaigns.filter(campaign => {
+            // Filter by status and search using traditional loop
+            campaigns = [];
+            for (let i = 0; i < allCampaigns.length; i++) {
+                const campaign = allCampaigns[i];
                 const matchesStatus = currentStatusFilter === 'all' || 
                                      (currentStatusFilter === 'ended' ? isEnded(campaign) : campaign.status === currentStatusFilter);
                 const matchesSearch = campaign.name.toLowerCase().includes(searchTerm);
-                return matchesStatus && matchesSearch;
-            });
+                
+                if (matchesStatus && matchesSearch) {
+                    campaigns.push(campaign);
+                }
+            }
             
             // Update display
             renderFilteredCampaigns();
@@ -3286,10 +3309,11 @@ app.get('/', (c) => {
             currentStatusFilter = status;
             
             // Update button styles
-            document.querySelectorAll('.status-filter-btn').forEach(btn => {
-                btn.classList.remove('bg-pinpoint-pink', 'text-white');
-                btn.classList.add('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
-            });
+            const filterButtons = document.querySelectorAll('.status-filter-btn');
+            for (let i = 0; i < filterButtons.length; i++) {
+                filterButtons[i].classList.remove('bg-pinpoint-pink', 'text-white');
+                filterButtons[i].classList.add('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
+            }
             
             const activeBtn = document.getElementById('filter-' + status);
             if (activeBtn) {
@@ -3957,7 +3981,8 @@ app.get('/', (c) => {
                     let hasDaily = false;
                     let hasLifetime = false;
                     
-                    response.data.data.forEach(adset => {
+                    for (let i = 0; i < response.data.data.length; i++) {
+                        const adset = response.data.data[i];
                         if (adset.daily_budget) {
                             totalDaily += parseFloat(adset.daily_budget);
                             hasDaily = true;
@@ -3966,7 +3991,7 @@ app.get('/', (c) => {
                             totalLifetime += parseFloat(adset.lifetime_budget);
                             hasLifetime = true;
                         }
-                    });
+                    }
                     
                     if (hasDaily) {
                         return \`$\${(totalDaily / 100).toFixed(2)}/day (ad set total)\`;
