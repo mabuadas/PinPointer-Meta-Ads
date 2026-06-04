@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PinPointer API Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">PinPointer API Test Page</h1>
+        
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">Meta Ads API Test</h2>
+            <button onclick="testMetaAPI()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                Test Meta Ads API
+            </button>
+            <div id="meta-results" class="mt-4 text-sm"></div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">Load Campaigns Test</h2>
+            <input type="text" id="account-id" placeholder="Enter Account ID" class="border px-3 py-2 rounded mr-2" value="201197736591771">
+            <button onclick="testCampaigns()" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                Load Campaigns
+            </button>
+            <div id="campaigns-results" class="mt-4 text-sm"></div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-bold mb-4">Console Logs</h2>
+            <div id="console-logs" class="bg-gray-50 p-4 rounded font-mono text-xs max-h-96 overflow-auto"></div>
+        </div>
+    </div>
+
+    <script>
+        const log = (message, type = 'info') => {
+            const logsDiv = document.getElementById('console-logs');
+            const time = new Date().toLocaleTimeString();
+            const color = type === 'error' ? 'text-red-600' : type === 'success' ? 'text-green-600' : 'text-gray-800';
+            logsDiv.innerHTML += `<div class="${color}">[${time}] ${message}</div>`;
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        };
+
+        async function testMetaAPI() {
+            log('Testing Meta Ads API...', 'info');
+            const resultsDiv = document.getElementById('meta-results');
+            resultsDiv.innerHTML = '<div class="text-gray-600">Loading...</div>';
+            
+            try {
+                const response = await axios.get('/api/me/adaccounts');
+                log(`✅ Success: ${response.data.data.length} accounts found`, 'success');
+                
+                let html = `<div class="text-green-600 font-bold mb-2">✅ ${response.data.data.length} Ad Accounts Found</div>`;
+                html += '<div class="space-y-1">';
+                response.data.data.slice(0, 5).forEach(account => {
+                    html += `<div class="text-sm">• ${account.name} (${account.account_id})</div>`;
+                });
+                html += '</div>';
+                resultsDiv.innerHTML = html;
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                resultsDiv.innerHTML = `<div class="text-red-600">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testCampaigns() {
+            const accountId = document.getElementById('account-id').value;
+            log(`Testing campaigns for account ${accountId}...`, 'info');
+            const resultsDiv = document.getElementById('campaigns-results');
+            resultsDiv.innerHTML = '<div class="text-gray-600">Loading...</div>';
+            
+            try {
+                const response = await axios.get(`/api/account/${accountId}/campaigns`);
+                log(`✅ Success: ${response.data.data.length} campaigns found`, 'success');
+                
+                let html = `<div class="text-green-600 font-bold mb-2">✅ ${response.data.data.length} Campaigns Found</div>`;
+                html += '<div class="space-y-2">';
+                response.data.data.slice(0, 5).forEach(campaign => {
+                    html += `
+                        <div class="border-l-4 border-blue-500 pl-3">
+                            <div class="font-semibold">${campaign.name}</div>
+                            <div class="text-xs text-gray-600">
+                                ID: ${campaign.id} | Status: ${campaign.status} | Objective: ${campaign.objective}
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                resultsDiv.innerHTML = html;
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                resultsDiv.innerHTML = `<div class="text-red-600">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-test on load
+        window.addEventListener('DOMContentLoaded', () => {
+            log('Page loaded, ready for testing', 'success');
+        });
+    </script>
+</body>
+</html>

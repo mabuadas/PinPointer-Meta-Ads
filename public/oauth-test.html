@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OAuth URL Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-8">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">Google OAuth Configuration Test</h1>
+        
+        <div class="mb-8 p-6 bg-blue-50 rounded-lg">
+            <h2 class="text-xl font-bold mb-4 text-blue-800">Current Configuration</h2>
+            <div class="space-y-2 font-mono text-sm">
+                <div><strong>Client ID:</strong> 312345908119-1ucadmou91if715jps8sdkjujhvifnfc.apps.googleusercontent.com</div>
+                <div><strong>Current URL:</strong> <span id="currentUrl" class="text-green-600"></span></div>
+                <div><strong>Redirect URI:</strong> <span id="redirectUri" class="text-green-600"></span></div>
+            </div>
+        </div>
+
+        <div class="mb-8 p-6 bg-yellow-50 rounded-lg border-2 border-yellow-300">
+            <h2 class="text-xl font-bold mb-4 text-yellow-800">⚠️ Action Required</h2>
+            <p class="mb-4">You need to add this <strong>exact URL</strong> to your Google Cloud Console:</p>
+            <div class="p-4 bg-white rounded border-2 border-yellow-400 mb-4">
+                <p class="font-mono text-sm break-all" id="copyUrl"></p>
+            </div>
+            <button onclick="copyToClipboard()" class="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                📋 Copy Redirect URI
+            </button>
+        </div>
+
+        <div class="mb-8 p-6 bg-white rounded-lg border">
+            <h2 class="text-xl font-bold mb-4 text-gray-800">Steps to Fix 403 Error:</h2>
+            <ol class="list-decimal list-inside space-y-3">
+                <li class="mb-2">
+                    Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="text-blue-600 underline">Google Cloud Console - Credentials</a>
+                </li>
+                <li class="mb-2">
+                    Find and click on client ID: <code class="bg-gray-100 px-2 py-1">312345908119-1ucadmou91if715jps8sdkjujhvifnfc</code>
+                </li>
+                <li class="mb-2">
+                    Under <strong>"Authorized redirect URIs"</strong>, click <strong>"+ ADD URI"</strong>
+                </li>
+                <li class="mb-2">
+                    Paste the exact redirect URI from above
+                </li>
+                <li class="mb-2">
+                    Under <strong>"Authorized JavaScript origins"</strong>, add: <code class="bg-gray-100 px-2 py-1" id="jsOrigin"></code>
+                </li>
+                <li class="mb-2">
+                    Click <strong>"SAVE"</strong>
+                </li>
+                <li class="mb-2">
+                    Go to <a href="https://console.cloud.google.com/apis/credentials/consent" target="_blank" class="text-blue-600 underline">OAuth consent screen</a>
+                </li>
+                <li class="mb-2">
+                    Under <strong>"Test users"</strong>, add your Google account email
+                </li>
+                <li class="mb-2">
+                    Click <strong>"SAVE"</strong>
+                </li>
+                <li>
+                    Wait 1-2 minutes for changes to propagate, then try OAuth again
+                </li>
+            </ol>
+        </div>
+
+        <div class="mb-8">
+            <h2 class="text-xl font-bold mb-4 text-gray-800">Test OAuth URLs:</h2>
+            <div class="space-y-4">
+                <button onclick="testGoogleAds()" class="w-full px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">
+                    🔗 Test Google Ads OAuth
+                </button>
+                <button onclick="testAnalytics()" class="w-full px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition">
+                    📊 Test Google Analytics OAuth
+                </button>
+            </div>
+        </div>
+
+        <div id="result" class="p-6 bg-gray-50 rounded-lg hidden">
+            <h3 class="text-lg font-bold mb-2">OAuth URL Generated:</h3>
+            <textarea id="oauthUrl" class="w-full p-4 border rounded font-mono text-xs" rows="6" readonly></textarea>
+            <button onclick="openOAuth()" class="mt-4 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                Open OAuth URL
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const currentUrl = window.location.origin;
+        const redirectUri = currentUrl + '/oauth2callback';
+        
+        document.getElementById('currentUrl').textContent = currentUrl;
+        document.getElementById('redirectUri').textContent = redirectUri;
+        document.getElementById('copyUrl').textContent = redirectUri;
+        document.getElementById('jsOrigin').textContent = currentUrl;
+
+        let currentOAuthUrl = '';
+
+        function copyToClipboard() {
+            navigator.clipboard.writeText(redirectUri).then(() => {
+                alert('✅ Redirect URI copied to clipboard!\\n\\nNow paste it in Google Cloud Console.');
+            });
+        }
+
+        function testGoogleAds() {
+            const clientId = '312345908119-1ucadmou91if715jps8sdkjujhvifnfc.apps.googleusercontent.com';
+            const scope = 'https://www.googleapis.com/auth/adwords';
+            
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+                `client_id=${encodeURIComponent(clientId)}&` +
+                `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+                `response_type=code&` +
+                `scope=${encodeURIComponent(scope)}&` +
+                `access_type=offline&` +
+                `prompt=consent&` +
+                `state=google-ads`;
+            
+            currentOAuthUrl = authUrl;
+            document.getElementById('oauthUrl').value = authUrl;
+            document.getElementById('result').classList.remove('hidden');
+        }
+
+        function testAnalytics() {
+            const clientId = '312345908119-1ucadmou91if715jps8sdkjujhvifnfc.apps.googleusercontent.com';
+            const scope = 'https://www.googleapis.com/auth/analytics.readonly';
+            
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+                `client_id=${encodeURIComponent(clientId)}&` +
+                `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+                `response_type=code&` +
+                `scope=${encodeURIComponent(scope)}&` +
+                `access_type=offline&` +
+                `prompt=consent&` +
+                `state=google-analytics`;
+            
+            currentOAuthUrl = authUrl;
+            document.getElementById('oauthUrl').value = authUrl;
+            document.getElementById('result').classList.remove('hidden');
+        }
+
+        function openOAuth() {
+            if (currentOAuthUrl) {
+                window.location.href = currentOAuthUrl;
+            }
+        }
+    </script>
+</body>
+</html>

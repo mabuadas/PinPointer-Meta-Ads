@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PinPointer - Service Status Check</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 min-h-screen p-8">
+    <div class="max-w-6xl mx-auto">
+        <div class="bg-white rounded-2xl shadow-2xl p-8">
+            <h1 class="text-4xl font-bold mb-2 bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
+                <i class="fas fa-heartbeat mr-3"></i>PinPointer Service Status
+            </h1>
+            <p class="text-gray-600 mb-8">Real-time diagnostic tool for all connected services</p>
+
+            <!-- Meta Ads Status -->
+            <div id="meta-status" class="mb-6 p-6 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200">
+                <h2 class="text-2xl font-bold mb-4 text-blue-800">
+                    <i class="fab fa-meta mr-2"></i>Meta Ads API
+                </h2>
+                <div class="space-y-2">
+                    <p id="meta-result" class="text-gray-700">Testing...</p>
+                    <button onclick="testMeta()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-sync-alt mr-2"></i>Retest Meta
+                    </button>
+                </div>
+            </div>
+
+            <!-- Google Ads Status -->
+            <div id="google-ads-status" class="mb-6 p-6 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200">
+                <h2 class="text-2xl font-bold mb-4 text-green-800">
+                    <i class="fab fa-google mr-2"></i>Google Ads API
+                </h2>
+                <div class="space-y-2">
+                    <p id="google-ads-result" class="text-gray-700">Waiting for OAuth...</p>
+                    <p class="text-sm text-gray-600">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        <strong>Note:</strong> Google Ads requires:
+                        <br>1. OAuth authentication (click button below)
+                        <br>2. Developer Token in environment variables
+                        <br>3. Google Ads API enabled in Cloud Console
+                    </p>
+                    <button onclick="authenticateGoogleAds()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Connect Google Ads
+                    </button>
+                    <button onclick="testGoogleAds()" id="test-google-ads-btn" disabled class="px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed ml-2">
+                        <i class="fas fa-sync-alt mr-2"></i>Test API
+                    </button>
+                </div>
+            </div>
+
+            <!-- Google Analytics Status -->
+            <div id="google-analytics-status" class="mb-6 p-6 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200">
+                <h2 class="text-2xl font-bold mb-4 text-purple-800">
+                    <i class="fas fa-chart-line mr-2"></i>Google Analytics API
+                </h2>
+                <div class="space-y-2">
+                    <p id="google-analytics-result" class="text-gray-700">Waiting for OAuth...</p>
+                    <p class="text-sm text-gray-600">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        <strong>Note:</strong> Google Analytics requires OAuth authentication first
+                    </p>
+                    <button onclick="authenticateGoogleAnalytics()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Connect Analytics
+                    </button>
+                    <button onclick="testAnalytics()" id="test-analytics-btn" disabled class="px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed ml-2">
+                        <i class="fas fa-sync-alt mr-2"></i>Test API
+                    </button>
+                </div>
+            </div>
+
+            <!-- Developer Token Check -->
+            <div class="mt-8 p-6 rounded-xl bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-200">
+                <h2 class="text-2xl font-bold mb-4 text-orange-800">
+                    <i class="fas fa-key mr-2"></i>Google Ads Developer Token
+                </h2>
+                <div class="space-y-2">
+                    <p class="text-gray-700">
+                        <strong>Status:</strong> <span id="dev-token-status">Checking...</span>
+                    </p>
+                    <p class="text-sm text-gray-600 mt-2">
+                        <i class="fas fa-exclamation-triangle mr-1 text-orange-500"></i>
+                        If you don't have a developer token, apply here:
+                        <a href="https://ads.google.com/aw/apicenter" target="_blank" class="text-blue-600 underline">
+                            https://ads.google.com/aw/apicenter
+                        </a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="mt-8 p-6 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-300">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">
+                    <i class="fas fa-clipboard-list mr-2"></i>Quick Setup Guide
+                </h2>
+                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                    <li><strong>Meta Ads:</strong> Should work immediately (no OAuth needed)</li>
+                    <li><strong>Google Analytics:</strong> Click "Connect Analytics" → Complete OAuth → Test API</li>
+                    <li><strong>Google Ads:</strong> 
+                        <ol class="list-disc list-inside ml-6 mt-1">
+                            <li>Get Developer Token from <a href="https://ads.google.com/aw/apicenter" target="_blank" class="text-blue-600 underline">Google Ads API Center</a></li>
+                            <li>Add to .dev.vars: GOOGLE_ADS_DEVELOPER_TOKEN=your-token</li>
+                            <li>Restart application: pm2 restart pinpointer</li>
+                            <li>Click "Connect Google Ads" → Complete OAuth → Test API</li>
+                        </ol>
+                    </li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Test Meta Ads
+        async function testMeta() {
+            const result = document.getElementById('meta-result');
+            result.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Testing Meta Ads API...';
+            
+            try {
+                const response = await axios.get('/api/me/adaccounts');
+                if (response.data && response.data.data && response.data.data.length > 0) {
+                    result.innerHTML = `✅ <strong class="text-green-600">SUCCESS!</strong> Found ${response.data.data.length} Meta ad accounts`;
+                } else {
+                    result.innerHTML = '⚠️ <strong class="text-orange-600">API works but no accounts found</strong>';
+                }
+            } catch (error) {
+                result.innerHTML = `❌ <strong class="text-red-600">FAILED:</strong> ${error.message}`;
+            }
+        }
+
+        // Google Ads OAuth
+        function authenticateGoogleAds() {
+            const clientId = '312345908119-1ucadmou91if715jps8sdkjujhvifnfc.apps.googleusercontent.com';
+            const redirectUri = window.location.origin + '/oauth2callback';
+            const scope = 'https://www.googleapis.com/auth/adwords';
+            const state = 'google-ads';
+
+            sessionStorage.setItem('oauth_state', state);
+            sessionStorage.setItem('oauth_service', 'google-ads');
+
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&state=${state}`;
+            window.location.href = authUrl;
+        }
+
+        // Google Analytics OAuth
+        function authenticateGoogleAnalytics() {
+            const clientId = '312345908119-1ucadmou91if715jps8sdkjujhvifnfc.apps.googleusercontent.com';
+            const redirectUri = window.location.origin + '/oauth2callback';
+            const scope = 'https://www.googleapis.com/auth/analytics.readonly';
+            const state = 'google-analytics';
+
+            sessionStorage.setItem('oauth_state', state);
+            sessionStorage.setItem('oauth_service', 'google-analytics');
+
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&state=${state}`;
+            window.location.href = authUrl;
+        }
+
+        // Test Google Ads
+        async function testGoogleAds() {
+            const result = document.getElementById('google-ads-result');
+            result.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Testing Google Ads API...';
+            
+            try {
+                const token = localStorage.getItem('google_ads_token');
+                if (!token) {
+                    result.innerHTML = '⚠️ <strong class="text-orange-600">No token found. Please connect Google Ads first.</strong>';
+                    return;
+                }
+
+                const response = await axios.post('/api/google-ads/customers', {
+                    access_token: token
+                });
+
+                if (response.data.needsDeveloperToken) {
+                    document.getElementById('dev-token-status').innerHTML = '❌ <strong class="text-red-600">MISSING</strong>';
+                    result.innerHTML = `⚠️ <strong class="text-orange-600">Developer Token Required</strong><br><small>${response.data.message}</small>`;
+                } else if (response.data.success && response.data.accounts) {
+                    document.getElementById('dev-token-status').innerHTML = '✅ <strong class="text-green-600">CONFIGURED</strong>';
+                    result.innerHTML = `✅ <strong class="text-green-600">SUCCESS!</strong> Found ${response.data.accounts.length} Google Ads accounts`;
+                } else {
+                    result.innerHTML = `⚠️ <strong class="text-orange-600">API responded but no accounts</strong>`;
+                }
+            } catch (error) {
+                const errMsg = error.response?.data?.message || error.message;
+                result.innerHTML = `❌ <strong class="text-red-600">FAILED:</strong> ${errMsg}`;
+            }
+        }
+
+        // Test Google Analytics
+        async function testAnalytics() {
+            const result = document.getElementById('google-analytics-result');
+            result.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Testing Google Analytics API...';
+            
+            try {
+                const token = localStorage.getItem('google_analytics_token');
+                if (!token) {
+                    result.innerHTML = '⚠️ <strong class="text-orange-600">No token found. Please connect Analytics first.</strong>';
+                    return;
+                }
+
+                const response = await axios.post('/api/analytics/properties', {
+                    access_token: token
+                });
+
+                if (response.data.properties && response.data.properties.length > 0) {
+                    result.innerHTML = `✅ <strong class="text-green-600">SUCCESS!</strong> Found ${response.data.properties.length} Analytics properties`;
+                } else {
+                    result.innerHTML = '⚠️ <strong class="text-orange-600">API works but no properties found</strong>';
+                }
+            } catch (error) {
+                const errMsg = error.response?.data?.error || error.message;
+                result.innerHTML = `❌ <strong class="text-red-600">FAILED:</strong> ${errMsg}`;
+            }
+        }
+
+        // Check if we came back from OAuth
+        window.addEventListener('load', () => {
+            // Test Meta immediately
+            testMeta();
+
+            // Check for OAuth tokens
+            const googleAdsToken = localStorage.getItem('google_ads_token');
+            const analyticsToken = localStorage.getItem('google_analytics_token');
+
+            if (googleAdsToken) {
+                document.getElementById('google-ads-result').innerHTML = '✅ <strong class="text-green-600">OAuth Connected!</strong> Click "Test API" to verify.';
+                document.getElementById('test-google-ads-btn').disabled = false;
+                document.getElementById('test-google-ads-btn').classList.remove('bg-gray-400', 'cursor-not-allowed');
+                document.getElementById('test-google-ads-btn').classList.add('bg-green-600', 'hover:bg-green-700');
+                testGoogleAds(); // Auto-test
+            }
+
+            if (analyticsToken) {
+                document.getElementById('google-analytics-result').innerHTML = '✅ <strong class="text-green-600">OAuth Connected!</strong> Click "Test API" to verify.';
+                document.getElementById('test-analytics-btn').disabled = false;
+                document.getElementById('test-analytics-btn').classList.remove('bg-gray-400', 'cursor-not-allowed');
+                document.getElementById('test-analytics-btn').classList.add('bg-purple-600', 'hover:bg-purple-700');
+                testAnalytics(); // Auto-test
+            }
+        });
+    </script>
+</body>
+</html>
