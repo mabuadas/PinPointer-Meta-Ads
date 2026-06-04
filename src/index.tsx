@@ -54,16 +54,20 @@ app.get('/api/me/adaccounts', async (c) => {
   try {
     const { META_ACCESS_TOKEN, META_API_VERSION } = c.env
     
+    // Allow custom token from header (for user-specific tokens)
+    const customToken = c.req.header('X-Meta-Token')
+    const accessToken = customToken || META_ACCESS_TOKEN
+    
     // Fetch all ad accounts with pagination
     let allAccounts = []
     let url = getGraphApiUrl(
-      `/me/adaccounts?fields=id,name,account_id,account_status,currency,timezone_name,business&limit=100&access_token=${META_ACCESS_TOKEN}`,
+      `/me/adaccounts?fields=id,name,account_id,account_status,currency,timezone_name,business&limit=100&access_token=${accessToken}`,
       META_API_VERSION
     )
     
     // Loop through all pages
     while (url) {
-      const data = await metaApiRequest(url, META_ACCESS_TOKEN)
+      const data = await metaApiRequest(url, accessToken)
       
       if (data.data && data.data.length > 0) {
         allAccounts = allAccounts.concat(data.data)
@@ -2295,6 +2299,9 @@ app.get('/', (c) => {
             </nav>
             
             <div class="mt-auto pt-8">
+                <button onclick="showTab('settings')" id="tab-settings" class="tab-button w-full text-left block px-4 py-3 rounded-lg hover:bg-gray-100 transition text-gray-700 mb-4">
+                    <i class="fas fa-cog mr-2"></i> Settings
+                </button>
                 <div class="px-4 py-3 bg-gray-100 rounded-lg">
                     <p class="text-xs text-gray-600">Platforms Connected</p>
                     <p class="text-sm font-semibold text-gray-800">4 Networks</p>
@@ -2531,6 +2538,155 @@ app.get('/', (c) => {
                             <i class="fas fa-clock mr-2"></i> Coming Soon
                         </button>
                         <p class="text-sm text-gray-500 mt-4">API credentials will be configured once provided</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SETTINGS TAB -->
+            <div id="content-settings" class="tab-content hidden">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800">Settings</h2>
+                    <p class="text-gray-600 mt-1">Configure your API credentials and preferences</p>
+                </div>
+                
+                <!-- Meta API Settings -->
+                <div class="glass-effect rounded-xl p-6 mb-6">
+                    <div class="flex items-center mb-4">
+                        <i class="fab fa-facebook text-3xl text-blue-600 mr-3"></i>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800">Meta Ads API Configuration</h3>
+                            <p class="text-sm text-gray-600">Configure your Meta (Facebook) access token for campaign data</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-info-circle text-blue-600 text-xl mr-3 mt-1"></i>
+                            <div class="text-sm text-blue-800">
+                                <p class="font-semibold mb-2">How to get your Meta Access Token:</p>
+                                <ol class="list-decimal list-inside space-y-1 ml-2">
+                                    <li>Go to <a href="https://developers.facebook.com/tools/explorer/" target="_blank" class="underline font-semibold">Meta Graph API Explorer</a></li>
+                                    <li>Click "Generate Access Token" and grant permissions:
+                                        <ul class="list-disc list-inside ml-4 mt-1">
+                                            <li>ads_read</li>
+                                            <li>ads_management</li>
+                                            <li>business_management</li>
+                                        </ul>
+                                    </li>
+                                    <li>Copy the generated token and paste it below</li>
+                                    <li>Click "Save & Test Connection"</li>
+                                </ol>
+                                <p class="mt-3 text-xs">
+                                    <strong>Note:</strong> Tokens from Graph API Explorer expire in 1-2 hours. 
+                                    For longer-lasting tokens, use System User tokens from Business Manager.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-key mr-2"></i> Meta Access Token
+                            </label>
+                            <textarea id="metaAccessToken" 
+                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pinpoint-pink font-mono text-sm"
+                                      rows="3"
+                                      placeholder="Paste your Meta access token here (starts with EAA...)"></textarea>
+                            <p class="text-xs text-gray-500 mt-1">
+                                Current token: <span id="currentTokenStatus" class="font-semibold text-gray-700">Not configured in session</span>
+                            </p>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <button onclick="saveMetaToken()" 
+                                    class="px-6 py-3 bg-pinpoint-pink text-white rounded-lg hover:bg-pinpoint-red transition shadow-md">
+                                <i class="fas fa-save mr-2"></i> Save & Test Connection
+                            </button>
+                            <button onclick="clearMetaToken()" 
+                                    class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                                <i class="fas fa-trash mr-2"></i> Clear Token
+                            </button>
+                        </div>
+                        
+                        <div id="tokenTestResult" class="hidden mt-4"></div>
+                    </div>
+                </div>
+                
+                <!-- Country Preferences -->
+                <div class="glass-effect rounded-xl p-6 mb-6">
+                    <div class="flex items-center mb-4">
+                        <i class="fas fa-globe text-3xl text-green-600 mr-3"></i>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800">Country & Market Preferences</h3>
+                            <p class="text-sm text-gray-600">Set your primary market for benchmark comparisons</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-map-marker-alt mr-2"></i> Primary Market
+                            </label>
+                            <select id="primaryMarket" 
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pinpoint-pink">
+                                <option value="JO">🇯🇴 Jordan</option>
+                                <option value="AE">🇦🇪 United Arab Emirates</option>
+                                <option value="SA">🇸🇦 Saudi Arabia</option>
+                                <option value="EG">🇪🇬 Egypt</option>
+                                <option value="LB">🇱🇧 Lebanon</option>
+                                <option value="KW">🇰🇼 Kuwait</option>
+                                <option value="QA">🇶🇦 Qatar</option>
+                                <option value="BH">🇧🇭 Bahrain</option>
+                                <option value="OM">🇴🇲 Oman</option>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">
+                                This will be used as the default for benchmark comparisons when country data is available
+                            </p>
+                        </div>
+                        
+                        <button onclick="saveMarketPreference()" 
+                                class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-md">
+                            <i class="fas fa-check mr-2"></i> Save Market Preference
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- About Section -->
+                <div class="glass-effect rounded-xl p-6">
+                    <div class="flex items-center mb-4">
+                        <i class="fas fa-info-circle text-3xl text-purple-600 mr-3"></i>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800">About PinPointer</h3>
+                            <p class="text-sm text-gray-600">Objective-aware & country-sensitive optimization engine</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-gray-600 mb-1">Version</p>
+                            <p class="font-bold text-gray-800">v3.6.0</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-gray-600 mb-1">Last Updated</p>
+                            <p class="font-bold text-gray-800">June 4, 2026</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-gray-600 mb-1">Supported Objectives</p>
+                            <p class="font-bold text-gray-800">6 Families</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-gray-600 mb-1">Markets Covered</p>
+                            <p class="font-bold text-gray-800">9 MENA Countries</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                        <p class="text-sm text-gray-700">
+                            <strong class="text-purple-700">✨ New Features:</strong> 
+                            Objective-aware optimization, country-specific benchmarks (Jordan included!), 
+                            platform rule validation, and smart alert classification.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -3737,6 +3893,124 @@ app.get('/', (c) => {
             };
             return icons[type] || 'fa-info-circle text-gray-500';
         }
+        
+        // Settings Management Functions
+        let sessionMetaToken = null; // Store token in session for this user
+        
+        function saveMetaToken() {
+            const token = document.getElementById('metaAccessToken').value.trim();
+            const resultDiv = document.getElementById('tokenTestResult');
+            
+            if (!token) {
+                resultDiv.className = 'bg-red-50 border border-red-200 rounded-lg p-4 mt-4';
+                resultDiv.innerHTML = '<div class="flex items-center">' +
+                    '<i class="fas fa-exclamation-circle text-red-600 mr-3"></i>' +
+                    '<div>' +
+                    '<p class="font-semibold text-red-800">Error</p>' +
+                    '<p class="text-sm text-red-700">Please enter a Meta access token</p>' +
+                    '</div></div>';
+                resultDiv.classList.remove('hidden');
+                return;
+            }
+            
+            // Show testing message
+            resultDiv.className = 'bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4';
+            resultDiv.innerHTML = '<div class="flex items-center">' +
+                '<i class="fas fa-spinner fa-spin text-blue-600 mr-3"></i>' +
+                '<div>' +
+                '<p class="font-semibold text-blue-800">Testing Connection...</p>' +
+                '<p class="text-sm text-blue-700">Validating your Meta access token</p>' +
+                '</div></div>';
+            resultDiv.classList.remove('hidden');
+            
+            // Store token in session
+            sessionMetaToken = token;
+            localStorage.setItem('pinpointer_meta_token', token);
+            
+            // Test the token by trying to fetch ad accounts
+            axios.get('/api/me/adaccounts', {
+                headers: {
+                    'X-Meta-Token': token
+                }
+            })
+            .then(response => {
+                const accountCount = response.data.count || 0;
+                resultDiv.className = 'bg-green-50 border border-green-200 rounded-lg p-4 mt-4';
+                resultDiv.innerHTML = '<div class="flex items-center">' +
+                    '<i class="fas fa-check-circle text-green-600 mr-3 text-2xl"></i>' +
+                    '<div>' +
+                    '<p class="font-semibold text-green-800">✅ Connection Successful!</p>' +
+                    '<p class="text-sm text-green-700">Found ' + accountCount + ' ad accounts. Token is valid and saved for this session.</p>' +
+                    '</div></div>';
+                
+                // Update status
+                document.getElementById('currentTokenStatus').textContent = 'Connected (Expires in ~1-2 hours)';
+                document.getElementById('currentTokenStatus').className = 'font-semibold text-green-600';
+                
+                // Reload Meta tab if it was already loaded
+                if (currentAccount) {
+                    loadAdAccounts();
+                }
+            })
+            .catch(error => {
+                const errorMsg = error.response?.data?.error || error.message;
+                resultDiv.className = 'bg-red-50 border border-red-200 rounded-lg p-4 mt-4';
+                resultDiv.innerHTML = '<div class="flex items-start">' +
+                    '<i class="fas fa-exclamation-triangle text-red-600 mr-3 text-xl mt-1"></i>' +
+                    '<div>' +
+                    '<p class="font-semibold text-red-800">❌ Connection Failed</p>' +
+                    '<p class="text-sm text-red-700 mt-1">' + errorMsg + '</p>' +
+                    '<p class="text-xs text-red-600 mt-2">' +
+                    '<strong>Common issues:</strong>' +
+                    '<br>• Token expired (get a fresh one from Graph API Explorer)' +
+                    '<br>• Missing permissions (ads_read, ads_management, business_management)' +
+                    '<br>• Invalid token format' +
+                    '</p></div></div>';
+            });
+        }
+        
+        function clearMetaToken() {
+            document.getElementById('metaAccessToken').value = '';
+            sessionMetaToken = null;
+            localStorage.removeItem('pinpointer_meta_token');
+            
+            document.getElementById('currentTokenStatus').textContent = 'Not configured in session';
+            document.getElementById('currentTokenStatus').className = 'font-semibold text-gray-700';
+            
+            const resultDiv = document.getElementById('tokenTestResult');
+            resultDiv.className = 'bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4';
+            resultDiv.innerHTML = '<div class="flex items-center">' +
+                '<i class="fas fa-info-circle text-yellow-600 mr-3"></i>' +
+                '<div>' +
+                '<p class="font-semibold text-yellow-800">Token Cleared</p>' +
+                '<p class="text-sm text-yellow-700">Your Meta access token has been removed from this session</p>' +
+                '</div></div>';
+            resultDiv.classList.remove('hidden');
+        }
+        
+        function saveMarketPreference() {
+            const market = document.getElementById('primaryMarket').value;
+            localStorage.setItem('pinpointer_primary_market', market);
+            
+            // Show success message
+            alert('✅ Market preference saved! Your campaigns will use ' + market + ' benchmarks when available.');
+        }
+        
+        // Load saved token on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedToken = localStorage.getItem('pinpointer_meta_token');
+            if (savedToken) {
+                sessionMetaToken = savedToken;
+                document.getElementById('metaAccessToken').value = savedToken;
+                document.getElementById('currentTokenStatus').textContent = 'Loaded from session';
+                document.getElementById('currentTokenStatus').className = 'font-semibold text-green-600';
+            }
+            
+            const savedMarket = localStorage.getItem('pinpointer_primary_market');
+            if (savedMarket) {
+                document.getElementById('primaryMarket').value = savedMarket;
+            }
+        });
         
         // Close modal on Escape key
         document.addEventListener('keydown', (e) => {
