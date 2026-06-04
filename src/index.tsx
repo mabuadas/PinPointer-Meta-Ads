@@ -169,7 +169,9 @@ app.get('/api/campaign/:campaignId/insights', async (c) => {
         let videoViews = 0
         let linkClicks = 0
         
-        insights.actions.forEach((action: any) => {
+        // Replace forEach with traditional for loop
+        for (let i = 0; i < insights.actions.length; i++) {
+          const action = insights.actions[i];
           const actionType = action.action_type
           const value = parseInt(action.value || 0)
           
@@ -209,7 +211,7 @@ app.get('/api/campaign/:campaignId/insights', async (c) => {
           else if (actionType.includes('video_view')) {
             videoViews += value
           }
-        })
+        }
         
         insights.conversions = totalConversions
         insights.purchases = purchases
@@ -639,7 +641,14 @@ function checkMetaLearningPhase(conversions: number, weeklyEvents: number, objec
 
 function checkGoogleSmartBidding(conversions: number, biddingStrategy: string): PlatformRule {
   const smartBiddingStrategies = ['target_cpa', 'target_roas', 'maximize_conversions', 'maximize_conversion_value']
-  const isSmartBidding = smartBiddingStrategies.some(s => biddingStrategy.toLowerCase().includes(s))
+  const biddingLower = biddingStrategy.toLowerCase();
+  let isSmartBidding = false;
+  for (let i = 0; i < smartBiddingStrategies.length; i++) {
+    if (biddingLower.includes(smartBiddingStrategies[i])) {
+      isSmartBidding = true;
+      break;
+    }
+  }
   
   if (!isSmartBidding) {
     return {
@@ -1562,9 +1571,13 @@ function generateOptimizationSuggestions(insights: any, objective: string, campa
     })
   }
   
-  // Sort suggestions by priority
+  // Sort suggestions by priority (without arrow function)
   const priorityOrder = { 'critical': 0, 'high': 1, 'medium': 2, 'low': 3 }
-  suggestions.sort((a, b) => priorityOrder[a.priority as keyof typeof priorityOrder] - priorityOrder[b.priority as keyof typeof priorityOrder])
+  suggestions.sort(function(a, b) {
+    const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] || 999;
+    const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] || 999;
+    return aPriority - bPriority;
+  })
   
   return suggestions
 }
@@ -1745,13 +1758,18 @@ app.post('/api/google-ads/campaigns', async (c) => {
       }
     }
     
-    // Convert map to array and calculate CTR
-    const campaigns = Array.from(campaignMap.values()).map(camp => ({
-      ...camp,
-      cost: `$${(camp.cost / 1000000).toFixed(2)}`,
-      ctr: camp.impressions > 0 ? `${((camp.clicks / camp.impressions) * 100).toFixed(2)}%` : '0.00%',
-      conversions: camp.conversions.toFixed(2)
-    }))
+    // Convert map to array and calculate CTR (without arrow function)
+    const campaignsArray = Array.from(campaignMap.values());
+    const campaigns = [];
+    for (let i = 0; i < campaignsArray.length; i++) {
+      const camp = campaignsArray[i];
+      campaigns.push({
+        ...camp,
+        cost: `$${(camp.cost / 1000000).toFixed(2)}`,
+        ctr: camp.impressions > 0 ? `${((camp.clicks / camp.impressions) * 100).toFixed(2)}%` : '0.00%',
+        conversions: camp.conversions.toFixed(2)
+      });
+    }
     
     return c.json({
       success: true,
